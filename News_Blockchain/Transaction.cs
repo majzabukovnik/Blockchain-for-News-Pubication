@@ -56,7 +56,7 @@ namespace News_Blockchain
         public List<string> Script { get { return _script; } set { _script = value; } }
 
 
-        public Transacation_Output(double value, int scriptLenght, List<string> script, string? text)
+        public Transacation_Output(double value, int scriptLenght, List<string> script, string text = "")
         {
             _value = value;
             _scriptLenght = scriptLenght;
