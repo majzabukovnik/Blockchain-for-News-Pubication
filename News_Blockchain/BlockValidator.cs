@@ -9,7 +9,7 @@ namespace News_Blockchain
 {
     class BlockValidator
     {
-        private const int DEFAULT_NBITS = 0x1d00ffff;
+        private const uint DEFAULT_NBITS = 0x1d00ffff;
         private const int TARGET_BLOCK_TIME = 10;
         private const int BLOCKS_PER_DIFFICULTY_READJUSTMENT = 2016;
 
@@ -75,7 +75,7 @@ namespace News_Blockchain
         /// <param name="headerHash"></param>
         /// <param name="nBits"></param>
         /// <returns>true or false</returns>
-        private bool CheckHashDifficultyTarget(string headerHash, int nBits)
+        private bool CheckHashDifficultyTarget(string headerHash, uint nBits)
         {
             BigInteger target = DecompressNbits(nBits);
 
@@ -92,9 +92,9 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="currentNbits"></param>
         /// <returns>difficulty</returns>
-        private int CalculateDifficulty(int nBits)
+        private uint CalculateDifficulty(uint nBits)
         {
-            return (int)(DecompressNbits(DEFAULT_NBITS) / DecompressNbits(nBits));
+            return (uint)(DecompressNbits(DEFAULT_NBITS) / DecompressNbits(nBits));
         }
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="nBits"></param>
         /// <returns>decompressed nBits value</returns>
-        private BigInteger DecompressNbits(int nBits)
+        private BigInteger DecompressNbits(uint nBits)
         {
             int significand = int.Parse(nBits.ToString("X").Substring(2), System.Globalization.NumberStyles.HexNumber);
             int exponent = int.Parse(nBits.ToString("X").Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
@@ -116,15 +116,30 @@ namespace News_Blockchain
         /// <param name="oldNbits"></param>
         /// <param name="timeDifference"></param>
         /// <returns>new nBits target</returns>
-        private int NewDifficulty(int oldNbits, int timeDifference)
+        private uint NewDifficulty(uint oldNbits, int timeDifference)
         {
-            int oldDifficulty = CalculateDifficulty(oldNbits);
+            uint oldDifficulty = CalculateDifficulty(oldNbits);
             double newDifficulty = oldDifficulty * (double)(BLOCKS_PER_DIFFICULTY_READJUSTMENT * TARGET_BLOCK_TIME) / timeDifference;
-            int newNbits = (int)(DEFAULT_NBITS / newDifficulty);
+            uint newNbits = (uint)(DEFAULT_NBITS / newDifficulty);
 
             if (newNbits > DEFAULT_NBITS)
                 return DEFAULT_NBITS;
             return newNbits;
+        }
+
+        private bool EvaluateCorrectnessOfBlockDifficulty(Block previousBlock, Block newBlock, int blockHeight)
+        {
+            if(blockHeight % 2016 == 0)
+            {
+                if (newBlock.NBits != NewDifficulty(previousBlock.NBits, 0))
+                    return false;
+                //TODO: In the above if find elegant way to input time diffrence between fist and last of 2016 blocks
+            }
+
+            if (previousBlock.NBits != newBlock.NBits)
+                return false;
+
+            return true;
         }
     }
 }
