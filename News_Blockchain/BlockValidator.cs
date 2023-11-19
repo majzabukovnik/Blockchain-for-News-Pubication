@@ -9,6 +9,10 @@ namespace News_Blockchain
 {
     class BlockValidator
     {
+        private const int DEFAULT_NBITS = 0x1d00ffff;
+        private const int TARGET_BLOCK_TIME = 10;
+        private const int BLOCKS_PER_DIFFICULTY_READJUSTMENT = 2016;
+
         /// <summary>
         /// Function checks given block for any potential rule violations and marks it as
         /// valid in case of no violations.
@@ -44,7 +48,7 @@ namespace News_Blockchain
                 InternalNodes.Add(new List<string>());
                 height++;
 
-                for(int index = 0; true; index += 2)
+                for (int index = 0; true; index += 2)
                 {
                     if (InternalNodes[height - 1].Count == 1)
                         return InternalNodes[height - 1][0];
@@ -65,7 +69,7 @@ namespace News_Blockchain
         }
 
         /// <summary>
-        /// Functions checks if provided hash satisfies nBits requirement.
+        /// Function checks if provided hash satisfies nBits requirement.
         /// It is not intended to be used for mining, because target is calculated every time.
         /// </summary>
         /// <param name="headerHash"></param>
@@ -73,9 +77,7 @@ namespace News_Blockchain
         /// <returns>true or false</returns>
         private bool CheckHashDifficultyTarget(string headerHash, int nBits)
         {
-            int significand = int.Parse(nBits.ToString("X").Substring(2), System.Globalization.NumberStyles.HexNumber);
-            int exponent = int.Parse(nBits.ToString("X").Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
-            BigInteger target = significand * BigInteger.Pow(256, exponent - 3);
+            BigInteger target = DecompressNbits(nBits);
 
             BigInteger HexHashValue = BigInteger.Parse(headerHash, System.Globalization.NumberStyles.HexNumber);
 
@@ -83,6 +85,46 @@ namespace News_Blockchain
                 return false;
 
             return true;
+        }
+
+        /// <summary>
+        /// Function calculates difficulty, given some nBits value
+        /// </summary>
+        /// <param name="currentNbits"></param>
+        /// <returns>difficulty</returns>
+        private int CalculateDifficulty(int nBits)
+        {
+            return (int)(DecompressNbits(DEFAULT_NBITS) / DecompressNbits(nBits));
+        }
+
+        /// <summary>
+        /// Function calculates full 256 bit value for nBits from compressed 32 bit int value
+        /// </summary>
+        /// <param name="nBits"></param>
+        /// <returns>decompressed nBits value</returns>
+        private BigInteger DecompressNbits(int nBits)
+        {
+            int significand = int.Parse(nBits.ToString("X").Substring(2), System.Globalization.NumberStyles.HexNumber);
+            int exponent = int.Parse(nBits.ToString("X").Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+            return significand * BigInteger.Pow(256, exponent - 3);
+        }
+
+        /// <summary>
+        /// Given nBits value of previous 14 day interval and time difference in minutes between first and
+        /// last block in 14 day interval, function outputs new nBits target
+        /// </summary>
+        /// <param name="oldNbits"></param>
+        /// <param name="timeDifference"></param>
+        /// <returns>new nBits target</returns>
+        private int NewDifficulty(int oldNbits, int timeDifference)
+        {
+            int oldDifficulty = CalculateDifficulty(oldNbits);
+            double newDifficulty = oldDifficulty * (double)(BLOCKS_PER_DIFFICULTY_READJUSTMENT * TARGET_BLOCK_TIME) / timeDifference;
+            int newNbits = (int)(DEFAULT_NBITS / newDifficulty);
+
+            if (newNbits > DEFAULT_NBITS)
+                return DEFAULT_NBITS;
+            return newNbits;
         }
     }
 }
