@@ -127,9 +127,17 @@ namespace News_Blockchain
             return newNbits;
         }
 
+        /// <summary>
+        /// Function checks if provided nBits in a block are correct. It also takes into
+        /// account difficulty readjustment.
+        /// </summary>
+        /// <param name="previousBlock"></param>
+        /// <param name="newBlock"></param>
+        /// <param name="blockHeight"></param>
+        /// <returns>true or false</returns>
         private bool EvaluateCorrectnessOfBlockDifficulty(Block previousBlock, Block newBlock, int blockHeight)
         {
-            if(blockHeight % 2016 == 0)
+            if (blockHeight % 2016 == 0)
             {
                 if (newBlock.NBits != NewDifficulty(previousBlock.NBits, 0))
                     return false;
