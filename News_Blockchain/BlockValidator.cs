@@ -4,6 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Numerics;
+using System.ComponentModel.Design;
+using System.Runtime.InteropServices;
+using System.Diagnostics.Contracts;
+using System.Security.Cryptography;
+using System.Globalization;
 
 namespace News_Blockchain
 {
@@ -145,6 +150,32 @@ namespace News_Blockchain
             }
 
             if (previousBlock.NBits != newBlock.NBits)
+                return false;
+
+            return true;
+        }
+        /// <summary>
+        /// Function checks if block size is equal or less than 1MB
+        /// </summary>
+        /// <param name="block"></param>
+        /// <returns>true or false</returns>
+        public bool CheckBlockSerializedSize(Block block)
+        {
+            if (Serializator.SerializeToString(block).Length >= 1024 * 1024)
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Function checks if the current block has the same pbhh as the previous block header hash
+        /// </summary>
+        /// <param name="previousBlock"></param>
+        /// <param name="currentBlock"></param>
+        /// <returns>true or false</returns>
+        public bool CheckForMatchingBlockHeader(Block previousBlock, Block currentBlock)
+        {
+            if (currentBlock.PreviousBlocKHeaderHash != Helpers.ComputeSHA256Hash(currentBlock.PreviousBlocKHeaderHash + previousBlock.MerkleRootHash + previousBlock.NBits + previousBlock.Nonce + previousBlock.Time))
                 return false;
 
             return true;
