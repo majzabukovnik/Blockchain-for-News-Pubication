@@ -159,7 +159,7 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="block"></param>
         /// <returns>true or false</returns>
-        public bool CheckBlockSerializedSize(Block block)
+        private bool CheckBlockSerializedSize(Block block)
         {
             if (Serializator.SerializeToString(block).Length >= 1024 * 1024)
                 return false;
@@ -173,9 +173,9 @@ namespace News_Blockchain
         /// <param name="previousBlock"></param>
         /// <param name="currentBlock"></param>
         /// <returns>true or false</returns>
-        public bool CheckForMatchingBlockHeader(Block previousBlock, Block currentBlock)
+        private bool CheckForMatchingBlockHeader(Block previousBlock, Block currentBlock)
         {
-            if (currentBlock.PreviousBlocKHeaderHash != Helpers.ComputeSHA256Hash(currentBlock.PreviousBlocKHeaderHash + previousBlock.MerkleRootHash + previousBlock.NBits + previousBlock.Nonce + previousBlock.Time))
+            if (currentBlock.PreviousBlocKHeaderHash != Helpers.ComputeSHA256Hash(Serializator.SerializeToString(previousBlock)))
                 return false;
 
             return true;
