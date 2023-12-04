@@ -180,5 +180,62 @@ namespace News_Blockchain
 
             return true;
         }
+
+        /// <summary>
+        /// Function calculates base reward for given block height
+        /// </summary>
+        /// <param name="heigt"></param>
+        /// <returns>base reward</returns>
+        private double CalculateBaseReward(int heigt)
+        {
+            return 50 * Math.Pow(0.5, heigt / 210000);
+        }
+
+        /// <summary>
+        /// Function calculates blocks fees 
+        /// </summary>
+        /// <param name="block"></param>
+        /// <returns>fee sum</returns>
+        private double CalculateBlockFees(Block block)
+        {
+            double fees = 0;
+            foreach(Transaction t in block.Transactions)
+            {
+                double inputValue = 0;
+                double outputValue = 0;
+
+                foreach(Transacation_Input ti in t.Inputs)
+                {
+                    //TODO: change 0 to appropriet function to call value from some output in previous transaction
+                    inputValue += 0;
+                }
+
+                foreach(Transacation_Output to in t.Outputs)
+                {
+                    outputValue += to.Value;
+                }
+                fees += inputValue - outputValue;
+            }
+            return fees;
+        }
+
+        /// <summary>
+        /// Function checks if coinbase transaction is correct 
+        /// </summary>
+        /// <param name="block"></param>
+        /// <param name="height"></param>
+        /// <returns>true or false</returns>
+        private bool CheckCoinbaseTransaction(Block block, int height)
+        {
+            Transaction coinbaseTransaction = block.Transactions.ElementAt(0);
+            double maxCoinbaseValue = CalculateBaseReward(height) + CalculateBlockFees(block);
+
+            if (coinbaseTransaction.Outputs.ElementAt(0).Value > maxCoinbaseValue)
+                return false;
+
+            return true;
+        }
     }
+
+
 }
