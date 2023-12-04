@@ -235,7 +235,29 @@ namespace News_Blockchain
 
             return true;
         }
+
+        /// <summary>
+        /// Function evaluates transaction signature
+        /// </summary>
+        /// <param name="transacation"></param>
+        /// <param name="pubkey"></param>
+        /// <param name="senderPublickKey"></param>
+        /// <returns>true or false</returns>
+        private bool CheckTransactionSignature(Transacation_Input transacation, string pubkey, string senderPublickKey)
+        {
+            string pubkeyCoppy = pubkey;
+
+            string pubkeyHash = Helpers.ComputeSHA256Hash(pubkeyCoppy);
+            string publickKeyHash = Helpers.ComputeSHA256Hash(senderPublickKey);
+            string privateKeyHash = Helpers.ComputeSHA256Hash(transacation.stringSignature);
+
+            if (pubkeyHash != publickKeyHash)
+                return false;
+
+            if (pubkeyHash != privateKeyHash)
+                return false;
+
+            return true;
+        }
     }
-
-
 }
