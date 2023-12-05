@@ -247,9 +247,9 @@ namespace News_Blockchain
         {
             string pubkeyCoppy = pubkey;
 
-            string pubkeyHash = Helpers.ComputeSHA256Hash(pubkeyCoppy);
-            string publickKeyHash = Helpers.ComputeSHA256Hash(senderPublickKey);
-            string privateKeyHash = Helpers.ComputeSHA256Hash(transacation.stringSignature);
+            string pubkeyHash = Helpers.ComputeSHA256Hash(pubkeyCoppy, 2);
+            string publickKeyHash = Helpers.ComputeSHA256Hash(senderPublickKey, 2);
+            string privateKeyHash = Helpers.ComputeSHA256Hash(transacation.stringSignature, 2);
 
             if (pubkeyHash != publickKeyHash)
                 return false;
