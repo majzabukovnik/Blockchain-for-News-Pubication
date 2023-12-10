@@ -51,6 +51,40 @@ namespace News_Blockchain
 
     public static class Helpers
     {
+	    /// <summary>
+	    /// Function returns twice hashed SHA256 value of given block
+	    /// </summary>
+	    /// <param name="block"></param>
+	    /// <returns>SHA256 hash</returns>
+	    public static string GetBlockHash(Block block)
+	    {
+		    string dataToHash = block.PreviousBlocKHeaderHash + block.MerkleRootHash + block.Time + block.NBits +
+		                        block.Nonce;
+		    return Helpers.ComputeSHA256Hash(dataToHash);
+	    }
+
+	    /// <summary>
+	    /// Function returns twice hashed SHA256 value of given transaction.
+	    /// Function's output can be used for signing transaction's inputs.
+	    /// </summary>
+	    /// <param name="trx"></param>
+	    /// <returns>SHA256 hash</returns>
+	    public static string GetTransactionHash(Transaction trx)
+	    {
+		    string dataToHash = Convert.ToString(trx.InCounter);
+		    foreach (Transacation_Input input in trx.Inputs)
+			    dataToHash += input.OutpointHash + input.OutpointIndex + input.ScriptLenght;
+		    dataToHash += Convert.ToString(trx.OutCounter);
+		    foreach (Transacation_Output output in trx.Outputs)
+		    {
+			    dataToHash += output.Value + output.ScriptLenght + output.Text;
+			    foreach (string script in output.Script)
+				    dataToHash += script;
+		    }
+		    
+		    return Helpers.ComputeSHA256Hash(dataToHash);
+	    } 
+	    
         /// <summary>
         /// Every input of the function is hashed twice via SHA256. 
         /// </summary>
