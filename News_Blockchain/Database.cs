@@ -41,34 +41,34 @@ public class Database
     /// </summary>
     /// <param name="key">Key (Hash of the Block)</param>
     /// <param name="value">Value (Serialized Block)</param>
-    public void InsertNewRecord(string key, string value)
+    public void InsertNewRecord(Block block)
     {
-        _zoneTree.AtomicUpsert(key, value);
+        _zoneTree.AtomicUpsert(Helpers.GetBlockHash(block), Serializator.SerializeToString(block));
     }
     
     /// <summary>
-    /// Get value (Serialized value of a Block)
+    /// Get value (Deserialized value of a Block)
     /// </summary>
     /// <param name="key">Key (Hash of the Block)</param>
-    /// <returns>Serialized value of a Block</returns>
-    public string GetRecord(string key)
+    /// <returns>Deserialized value of a Block</returns>
+    public Block GetRecord(string key)
     {
         string answer = "";
         _zoneTree.TryGet(key, out answer);
-        return answer;
+        return Serializator.DeserializeToBlock(answer);
     }
 
     /// <summary>
     /// Get all records store in the database
     /// </summary>
     /// <returns>All records</returns>
-    public Dictionary<string, string> GetAllRecords()
+    public Dictionary<string, Block> GetAllRecords()
     {
-        Dictionary<string, string> DB = new Dictionary<string, string>();
+        Dictionary<string, Block> DB = new Dictionary<string, Block>();
         using var iteration = _zoneTree.CreateIterator();
         while (iteration.Next())
         {
-            DB.Add(iteration.CurrentKey, iteration.CurrentValue);
+            DB.Add(iteration.CurrentKey, Serializator.DeserializeToBlock(iteration.CurrentValue));
         }
 
         return DB;
