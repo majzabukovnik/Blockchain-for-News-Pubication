@@ -3,13 +3,15 @@ using Tenray.ZoneTree.Core;
 
 namespace News_Blockchain;
 
-public enum DB
+
+public abstract class Database
 {
-    Blockchain,
-    UTEx
-}
-public class Database
-{
+    public enum DB
+    {
+        Blockchain,
+        UTEx
+    }
+    
     /// <summary>
     /// Returns count of all records
     /// </summary>
@@ -18,7 +20,7 @@ public class Database
         get { return GetAllRecordsCount(); }
     }
     
-    private IZoneTree<string, string> _zoneTree;
+    protected IZoneTree<string, string> _zoneTree;
     
     /// <summary>
     /// Creates or Opens a new connection to the LocalDB with the default path name = "Blockchain"
@@ -43,37 +45,6 @@ public class Database
     }
     
     /// <summary>
-    /// Insert a new key-value (hash, block)
-    /// </summary>
-    /// <param name="key">Key (Hash of the Block)</param>
-    /// <param name="value">Value (Serialized Block)</param>
-    public void InsertNewRecord(Block block)
-    {
-        _zoneTree.AtomicUpsert(Helpers.GetBlockHash(block), Serializator.SerializeToString(block));
-    }
-    
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="trans"></param>
-    public void InsertNewRecord(UTExTrans trans)
-    {
-        _zoneTree.AtomicUpsert(trans.GetKey(), trans.GetValue());
-    }
-    
-    /// <summary>
-    /// Get value (Deserialized value of a Block)
-    /// </summary>
-    /// <param name="key">Key (Hash of the Block)</param>
-    /// <returns>Deserialized value of a Block</returns>
-    public Block GetRecord(string key)
-    {
-        string answer = "";
-        _zoneTree.TryGet(key, out answer);
-        return Serializator.DeserializeToBlock(answer);
-    }
-
-    /// <summary>
     /// Deletes all records (Blocks from a specified key)
     /// </summary>
     /// <param name="key"></param>
@@ -97,6 +68,45 @@ public class Database
     }
     
     /// <summary>
+    /// Returns count of all records
+    /// </summary>
+    /// <returns>Count</returns>
+    public int GetAllRecordsCount()
+    {
+        return (int)_zoneTree.Count();
+    }
+}
+
+public class BlockDB : Database
+{
+    public BlockDB() : base(DB.Blockchain)
+    {
+        
+    }
+    
+    /// <summary>
+    /// Insert a new key-value (hash, block)
+    /// </summary>
+    /// <param name="key">Key (Hash of the Block)</param>
+    /// <param name="value">Value (Serialized Block)</param>
+    public void InsertNewRecord(Block block)
+    {
+        _zoneTree.AtomicUpsert(Helpers.GetBlockHash(block), Serializator.SerializeToString(block));
+    }
+
+    /// <summary>
+    /// Get value (Deserialized value of a Block)
+    /// </summary>
+    /// <param name="key">Key (Hash of the Block)</param>
+    /// <returns>Deserialized value of a Block</returns>
+    public Block GetRecord(string key)
+    {
+        string answer = "";
+        _zoneTree.TryGet(key, out answer);
+        return Serializator.DeserializeToBlock(answer);
+    }
+    
+    /// <summary>
     /// Get all records store in the database
     /// </summary>
     /// <returns>All records</returns>
@@ -111,16 +121,55 @@ public class Database
 
         return DB;
     }
+}
+
+public class UTExDB : Database
+{
+    public UTExDB() : base(DB.UTEx)
+    {
+        
+    }
     
     /// <summary>
-    /// Returns count of all records
+    /// Insert a new key-value
     /// </summary>
-    /// <returns>Count</returns>
-    public int GetAllRecordsCount()
+    /// <param name="trans">Transaction to store </param>
+    public void InsertNewRecord(UTExTrans trans)
     {
-        return (int)_zoneTree.Count();
+        _zoneTree.AtomicUpsert(trans.GetKey(), trans.GetValue());
+    }
+    
+    /// <summary>
+    /// Get value (value of a Transaction)
+    /// </summary>
+    /// <param name="key">Key </param>
+    /// <returns> value of a Transaction</returns>
+    public UTExTrans GetRecord(string key)
+    {
+        string answer = "";
+        _zoneTree.TryGet(key, out answer);
+        string[] keys = key.Split("-");
+        return new UTExTrans(keys[0], int.Parse(keys[1]), answer);
+    }
+    
+    /// <summary>
+    /// Get all records store in the database
+    /// </summary>
+    /// <returns>All records</returns>
+    public Dictionary<string, string> GetAllRecords()
+    {
+        Dictionary<string, string> db = new Dictionary<string, string>();
+        using var iteration = _zoneTree.CreateIterator();
+        while (iteration.Next())
+        {
+            db.Add(iteration.CurrentKey, iteration.CurrentValue);
+        }
+
+        return db;
     }
 }
+
+
 
 public class UTExTrans
 {
