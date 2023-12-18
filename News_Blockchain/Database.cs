@@ -9,7 +9,7 @@ public abstract class Database
     public enum DB
     {
         Blockchain,
-        UTEx
+        UTOX
     }
     
     /// <summary>
@@ -38,7 +38,7 @@ public abstract class Database
     /// <param name="db">custom path name</param>
     public Database(DB db)
     {
-        string path = db == DB.Blockchain ? "Blockchain" : "UTEx";
+        string path = db == DB.Blockchain ? "Blockchain" : "UTOX";
         _zoneTree = new ZoneTreeFactory<string, string>()
             .SetDataDirectory(path)
             .OpenOrCreate();
@@ -105,6 +105,19 @@ public class BlockDB : Database
         _zoneTree.TryGet(key, out answer);
         return Serializator.DeserializeToBlock(answer);
     }
+
+    public List<Block> GetLastSpecifiedBlocks(int index)
+    {
+        List<Block> list = new List<Block>();
+        var iterator = _zoneTree.CreateIterator();
+        for (int i = 0; i < index; i++)
+        {
+            list.Add(Serializator.DeserializeToBlock(iterator.CurrentValue));
+            iterator.Next();
+        }
+
+        return list;
+    }
     
     /// <summary>
     /// Get all records store in the database
@@ -123,9 +136,9 @@ public class BlockDB : Database
     }
 }
 
-public class UTExDB : Database
+public class UTOXDB : Database
 {
-    public UTExDB() : base(DB.UTEx)
+    public UTOXDB() : base(DB.UTOX)
     {
         
     }
@@ -134,7 +147,7 @@ public class UTExDB : Database
     /// Insert a new key-value
     /// </summary>
     /// <param name="trans">Transaction to store </param>
-    public void InsertNewRecord(UTExTrans trans)
+    public void InsertNewRecord(UTOXTrans trans)
     {
         _zoneTree.AtomicUpsert(trans.GetKey(), trans.GetValue());
     }
@@ -144,12 +157,12 @@ public class UTExDB : Database
     /// </summary>
     /// <param name="key">Key </param>
     /// <returns> value of a Transaction</returns>
-    public UTExTrans GetRecord(string key)
+    public UTOXTrans GetRecord(string key)
     {
         string answer = "";
         _zoneTree.TryGet(key, out answer);
         string[] keys = key.Split("-");
-        return new UTExTrans(keys[0], int.Parse(keys[1]), answer);
+        return new UTOXTrans(keys[0], int.Parse(keys[1]), answer);
     }
     
     /// <summary>
@@ -171,7 +184,7 @@ public class UTExDB : Database
 
 
 
-public class UTExTrans
+public class UTOXTrans
 {
     private string _hashTrans;
     private int _index;
@@ -195,7 +208,7 @@ public class UTExTrans
         set { _hashBlock = value; }
     }
 
-    public UTExTrans(string hashTrans, int index, string hashBlock)
+    public UTOXTrans(string hashTrans, int index, string hashBlock)
     {
         _hashTrans = hashTrans;
         _index = index;
