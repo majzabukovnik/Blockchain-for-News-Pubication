@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics.Contracts;
 using System.Security.Cryptography;
 using System.Globalization;
+using SshNet.Security.Cryptography;
 
 namespace News_Blockchain
 {
@@ -243,24 +244,36 @@ namespace News_Blockchain
         /// <param name="pubkey"></param>
         /// <param name="senderPublickKey"></param>
         /// <returns>true or false</returns>
-        private bool CheckTransactionSignature(Transacation_Input transaction, string pubkey, string senderPublickKey)
+        private bool CheckTransactionSignature(Transacation_Input transaction, Transacation_Output transaction_Output, string pubkey, string senderPublickKey, string signature)
         {
             string pubkeyCoppy = pubkey;
 
             string pubkeyHash = Helpers.ComputeSHA256Hash(pubkeyCoppy, 2);
             string publickKeyHash = Helpers.ComputeSHA256Hash(senderPublickKey, 2);
-            string privateKeyHash = Helpers.ComputeSHA256Hash(transaction.stringSignature, 2);
+            string signatureHash = Helpers.ComputeSHA256Hash(transaction.stringSignature, 2);
 
             if (pubkeyHash != publickKeyHash)
                 return false;
 
-            if (pubkeyHash != privateKeyHash)
-                return false;
-
-            
+           // if (pubkeyHash != privateKeyHash)
+             //   return false;
 
             return true;
         }
 
+        /// <summary>
+        /// Function checks if block height of a coinbase transaction is greater than 100
+        /// </summary>
+        /// <param name="height"></param>
+        /// <returns>ture of false</returns>
+        private bool CoinbaseTransactionMaturity(Block block, int height, int currentHeight)
+        {
+            if (CheckCoinbaseTransaction(block, height) == true)
+
+            if ((currentHeight - height) < 100)
+                return false;
+
+            return true;
+        }
     }
 }
