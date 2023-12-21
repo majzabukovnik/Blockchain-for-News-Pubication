@@ -3,9 +3,6 @@ using System.Text;
 using System.Text.Json;
 using System.Security.Cryptography;
 
-
-
-
 namespace News_Blockchain
 {
 	public static class Serializator

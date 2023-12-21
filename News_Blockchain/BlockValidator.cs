@@ -243,13 +243,13 @@ namespace News_Blockchain
         /// <param name="pubkey"></param>
         /// <param name="senderPublickKey"></param>
         /// <returns>true or false</returns>
-        private bool CheckTransactionSignature(Transacation_Input transacation, string pubkey, string senderPublickKey)
+        private bool CheckTransactionSignature(Transacation_Input transaction, string pubkey, string senderPublickKey)
         {
             string pubkeyCoppy = pubkey;
 
             string pubkeyHash = Helpers.ComputeSHA256Hash(pubkeyCoppy, 2);
             string publickKeyHash = Helpers.ComputeSHA256Hash(senderPublickKey, 2);
-            string privateKeyHash = Helpers.ComputeSHA256Hash(transacation.stringSignature, 2);
+            string privateKeyHash = Helpers.ComputeSHA256Hash(transaction.stringSignature, 2);
 
             if (pubkeyHash != publickKeyHash)
                 return false;
@@ -257,7 +257,10 @@ namespace News_Blockchain
             if (pubkeyHash != privateKeyHash)
                 return false;
 
+            
+
             return true;
         }
+
     }
 }
