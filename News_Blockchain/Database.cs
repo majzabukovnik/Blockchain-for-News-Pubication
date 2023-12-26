@@ -9,9 +9,9 @@ public abstract class Database
     public enum DB
     {
         Blockchain,
-        UTOX
+        UTXO
     }
-    
+
     /// <summary>
     /// Returns count of all records
     /// </summary>
@@ -38,7 +38,7 @@ public abstract class Database
     /// <param name="db">custom path name</param>
     public Database(DB db)
     {
-        string path = db == DB.Blockchain ? "Blockchain" : "UTOX";
+        string path = db == DB.Blockchain ? "Blockchain" : "UTXO";
         _zoneTree = new ZoneTreeFactory<string, string>()
             .SetDataDirectory(path)
             .OpenOrCreate();
@@ -136,9 +136,9 @@ public class BlockDB : Database
     }
 }
 
-public class UTOXDB : Database
+public class UTXODB : Database
 {
-    public UTOXDB() : base(DB.UTOX)
+    public UTXODB() : base(DB.UTXO)
     {
         
     }
@@ -147,7 +147,7 @@ public class UTOXDB : Database
     /// Insert a new key-value
     /// </summary>
     /// <param name="trans">Transaction to store </param>
-    public void InsertNewRecord(UTOXTrans trans)
+    public void InsertNewRecord(UTXOTrans trans)
     {
         _zoneTree.AtomicUpsert(trans.GetKey(), trans.GetValue());
     }
@@ -157,12 +157,12 @@ public class UTOXDB : Database
     /// </summary>
     /// <param name="key">Key </param>
     /// <returns> value of a Transaction</returns>
-    public UTOXTrans GetRecord(string key)
+    public UTXOTrans GetRecord(string key)
     {
         string answer = "";
         _zoneTree.TryGet(key, out answer);
         string[] keys = key.Split("-");
-        return new UTOXTrans(keys[0], int.Parse(keys[1]), answer);
+        return new UTXOTrans(keys[0], int.Parse(keys[1]), answer);
     }
     
     /// <summary>
@@ -184,7 +184,7 @@ public class UTOXDB : Database
 
 
 
-public class UTOXTrans
+public class UTXOTrans
 {
     private string _hashTrans;
     private int _index;
@@ -208,7 +208,7 @@ public class UTOXTrans
         set { _hashBlock = value; }
     }
 
-    public UTOXTrans(string hashTrans, int index, string hashBlock)
+    public UTXOTrans(string hashTrans, int index, string hashBlock)
     {
         _hashTrans = hashTrans;
         _index = index;
