@@ -264,13 +264,16 @@ namespace News_Blockchain
         /// <summary>
         /// Function checks if block height of a coinbase transaction is greater than 100
         /// </summary>
-        /// <param name="height"></param>
+        /// /// <param name="block">block that contains coinbase trx</param>
+        /// /// <param name="trxHeight">blocks height</param>
+        /// <param name="currentHeight">current height</param>
         /// <returns>ture of false</returns>
-        private bool CoinbaseTransactionMaturity(Block block, int height, int currentHeight)
+        private bool CoinbaseTransactionMaturity(Block block, int trxHeight, int currentHeight)
         {
-            if (CheckCoinbaseTransaction(block, height) == true)
+            if (!CheckCoinbaseTransaction(block, trxHeight))
+                return false;
 
-            if ((currentHeight - height) < 100)
+            if (currentHeight - trxHeight < 100)
                 return false;
 
             return true;
