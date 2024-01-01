@@ -176,7 +176,7 @@ namespace News_Blockchain
         /// <returns>true or false</returns>
         private bool CheckForMatchingBlockHeader(Block previousBlock, Block currentBlock)
         {
-            if (currentBlock.PreviousBlocKHeaderHash != Helpers.ComputeSHA256Hash(Serializator.SerializeToString(previousBlock)))
+            if (currentBlock.PreviousBlocKHeaderHash != Helpers.GetBlockHash(previousBlock))
                 return false;
 
             return true;
