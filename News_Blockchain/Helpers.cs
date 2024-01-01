@@ -109,6 +109,20 @@ namespace News_Blockchain
                 return ComputeSHA256Hash(stringBuilder.ToString(), 2);
             }
         }
+
+        /// <summary>
+        /// Function computes ripemd160 hash from string
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns>hash</returns>
+        public static string ComputeRIPEMD160Hash(string input)
+        {
+            using (SshNet.Security.Cryptography.RIPEMD160 ripemd160 = new SshNet.Security.Cryptography.RIPEMD160())
+            {
+                byte[] data = Encoding.UTF8.GetBytes(input);
+                return BitConverter.ToString(ripemd160.ComputeHash(data)).Replace("-", "").ToLower();
+            }
+        }   
     }
 }
 

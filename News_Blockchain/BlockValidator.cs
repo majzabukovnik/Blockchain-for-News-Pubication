@@ -4,6 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Numerics;
+using System.ComponentModel.Design;
+using System.Runtime.InteropServices;
+using System.Diagnostics.Contracts;
+using System.Security.Cryptography;
+using System.Globalization;
+using SshNet.Security.Cryptography;
 
 namespace News_Blockchain
 {
@@ -145,6 +151,126 @@ namespace News_Blockchain
             }
 
             if (previousBlock.NBits != newBlock.NBits)
+                return false;
+
+            return true;
+        }
+        /// <summary>
+        /// Function checks if block size is equal or less than 1MB
+        /// </summary>
+        /// <param name="block"></param>
+        /// <returns>true or false</returns>
+        private bool CheckBlockSerializedSize(Block block)
+        {
+            if (Serializator.SerializeToString(block).Length >= 1024 * 1024)
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Function checks if the current block has the same pbhh as the previous block header hash
+        /// </summary>
+        /// <param name="previousBlock"></param>
+        /// <param name="currentBlock"></param>
+        /// <returns>true or false</returns>
+        private bool CheckForMatchingBlockHeader(Block previousBlock, Block currentBlock)
+        {
+            if (currentBlock.PreviousBlocKHeaderHash != Helpers.GetBlockHash(previousBlock))
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Function calculates base reward for given block height
+        /// </summary>
+        /// <param name="heigt"></param>
+        /// <returns>base reward</returns>
+        private double CalculateBaseReward(int heigt)
+        {
+            return 50 * Math.Pow(0.5, heigt / 210000);
+        }
+
+        /// <summary>
+        /// Function calculates blocks fees 
+        /// </summary>
+        /// <param name="block"></param>
+        /// <returns>fee sum</returns>
+        private double CalculateBlockFees(Block block)
+        {
+            double fees = 0;
+            foreach(Transaction t in block.Transactions)
+            {
+                double inputValue = 0;
+                double outputValue = 0;
+
+                foreach(Transacation_Input ti in t.Inputs)
+                {
+                    //TODO: change 0 to appropriet function to call value from some output in previous transaction
+                    inputValue += 0;
+                }
+
+                foreach(Transacation_Output to in t.Outputs)
+                {
+                    outputValue += to.Value;
+                }
+                fees += inputValue - outputValue;
+            }
+            return fees;
+        }
+
+        /// <summary>
+        /// Function checks if coinbase transaction is correct 
+        /// </summary>
+        /// <param name="block"></param>
+        /// <param name="height"></param>
+        /// <returns>true or false</returns>
+        private bool CheckCoinbaseTransaction(Block block, int height)
+        {
+            Transaction coinbaseTransaction = block.Transactions.ElementAt(0);
+            double maxCoinbaseValue = CalculateBaseReward(height) + CalculateBlockFees(block);
+
+            if (coinbaseTransaction.Outputs.ElementAt(0).Value > maxCoinbaseValue)
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Function evaluates transaction signature
+        /// </summary>
+        /// <param name="transacation"></param>
+        /// <param name="pubkey"></param>
+        /// <param name="senderPublickKey"></param>
+        /// <returns>true or false</returns>
+        private bool CheckTransactionSignature(Transacation_Input transaction, Transacation_Output transaction_Output, string pubkey, string senderPublickKey, string signature)
+        {
+            string pubkeyCoppy = pubkey;
+
+            string pubkeyHash = Helpers.ComputeSHA256Hash(pubkeyCoppy, 2);
+            string publickKeyHash = Helpers.ComputeSHA256Hash(senderPublickKey, 2);
+            string signatureHash = Helpers.ComputeSHA256Hash(transaction.stringSignature, 2);
+
+            if (pubkeyHash != publickKeyHash)
+                return false;
+
+           // if (pubkeyHash != privateKeyHash)
+             //   return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Function checks if block height of a coinbase transaction is greater than 100
+        /// </summary>
+        /// <param name="height"></param>
+        /// <returns>ture of false</returns>
+        private bool CoinbaseTransactionMaturity(Block block, int height, int currentHeight)
+        {
+            if (CheckCoinbaseTransaction(block, height) == true)
+
+            if ((currentHeight - height) < 100)
                 return false;
 
             return true;
