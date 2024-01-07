@@ -304,5 +304,27 @@ namespace News_Blockchain
             return true;
         }
 
+        /// <summary>
+        /// Function checks the average time of previous 11 blocks and if the current block is less than 2 hours
+        /// </summary>
+        /// <param name="blockDB"></param>
+        /// <param name="newBlock"></param>
+        /// <returns>true or false</returns>
+        private bool CheckForBlockTime(BlockDB blockDB, Block newBlock)
+        {
+            List<Block> list = blockDB.GetLastSpecifiedBlocks(11);
+            uint sumTime = 0;
+            foreach(Block block in list)
+            {
+                sumTime += block.Time;
+            }
+            uint average = sumTime / 11;
+            uint unixTimestamp = (uint)DateTime.UtcNow.AddHours(2).Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
+
+            if ((average > newBlock.Time) && (newBlock.Time > unixTimestamp))
+                return false;
+
+            return true;
+        }
     }
 }
