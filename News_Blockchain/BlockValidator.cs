@@ -10,6 +10,7 @@ using System.Diagnostics.Contracts;
 using System.Security.Cryptography;
 using System.Globalization;
 using SshNet.Security.Cryptography;
+using System.Runtime.CompilerServices;
 
 namespace News_Blockchain
 {
@@ -244,19 +245,43 @@ namespace News_Blockchain
         /// <param name="pubkey"></param>
         /// <param name="senderPublickKey"></param>
         /// <returns>true or false</returns>
-        private bool CheckTransactionSignature(Transacation_Input transaction, Transacation_Output transaction_Output, string pubkey, string senderPublickKey, string signature)
+        private bool CheckTransactionSignature(Transacation_Input transaction, Transacation_Output transaction_Output, string pubkey, string senderPublickKey)
         {
             string pubkeyCoppy = pubkey;
 
             string pubkeyHash = Helpers.ComputeSHA256Hash(pubkeyCoppy, 2);
             string publickKeyHash = Helpers.ComputeSHA256Hash(senderPublickKey, 2);
-            string signatureHash = Helpers.ComputeSHA256Hash(transaction.stringSignature, 2);
+
+            byte[] data = Encoding.ASCII.GetBytes("message");
+            byte[] hash = System.Security.Cryptography.SHA256.Create().ComputeHash(data);
+
+            RSAParameters sharedParameters;
+            byte[] signedHash;
+            //generate signature
+            using (RSA rsa = RSA.Create())
+            {
+                sharedParameters = rsa.ExportParameters(false);
+
+                RSAPKCS1SignatureFormatter rsaFormatter = new(rsa);
+                rsaFormatter.SetHashAlgorithm(nameof(Helpers.ComputeSHA256Hash));
+
+                signedHash = rsaFormatter.CreateSignature(hash);
+            }
+
+            //verify signature 
+            using (RSA rsa = RSA.Create())
+            {
+                rsa.ImportParameters(sharedParameters);
+
+                RSAPKCS1SignatureDeformatter rsaDeformatter = new(rsa);
+                rsaDeformatter.SetHashAlgorithm(nameof(Helpers.ComputeSHA256Hash));
+
+                if (!rsaDeformatter.VerifySignature(hash, signedHash))
+                    return false;
+            }
 
             if (pubkeyHash != publickKeyHash)
-                return false;
-
-           // if (pubkeyHash != privateKeyHash)
-             //   return false;
+             return false;
 
             return true;
         }
@@ -278,5 +303,6 @@ namespace News_Blockchain
 
             return true;
         }
+
     }
 }
