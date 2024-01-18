@@ -38,13 +38,15 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="transactions"></param>
         /// <returns>Merkle root hash value</returns>
-        private string MerkleRootHash(List<Transaction> transactions)
+        private string MerkleRootHash(List<Transaction> transactions, Block block, int blockHeight)
         {
             List<List<string>> InternalNodes = new List<List<string>>();
             int height = 0;
 
             InternalNodes.Add(new List<string>());
-            //TODO: Add validation that first transaction in the list is coinbase transaction
+
+            if (!CheckCoinbaseTransaction(block, blockHeight))
+
             foreach (Transaction transaction in transactions)
             {
                 InternalNodes[0].Add(Serializator.SerializeToString(transaction));
@@ -142,13 +144,33 @@ namespace News_Blockchain
         /// <param name="newBlock"></param>
         /// <param name="blockHeight"></param>
         /// <returns>true or false</returns>
-        private bool EvaluateCorrectnessOfBlockDifficulty(Block previousBlock, Block newBlock, int blockHeight)
+        private bool EvaluateCorrectnessOfBlockDifficulty(Block previousBlock, Block newBlock, int blockHeight, BlockDB blockDB)
         {
             if (blockHeight % 2016 == 0)
             {
                 if (newBlock.NBits != NewDifficulty(previousBlock.NBits, 0))
                     return false;
                 //TODO: In the above if find elegant way to input time diffrence between fist and last of 2016 blocks
+                int factor = 1;
+                int currentLimit = 2016 * factor;
+                while (blockHeight < currentLimit)
+                {
+                    int specifiedBlocks = currentLimit;
+                    int lastBlock = specifiedBlocks - 1;
+                    int firstBlock = lastBlock - 2015;
+
+                    List<Block> list = blockDB.GetLastSpecifiedBlocks(specifiedBlocks);
+                    uint block1Time = list.ElementAt(firstBlock).Time;
+                    uint block2015Time = list.ElementAt(lastBlock).Time;
+
+                    uint timeDifference = block1Time - block1Time;
+                }
+                if (blockHeight > currentLimit)
+                {
+                    factor++;
+                }
+                //to use this more elegantly maybe add a function to call blocks by their height in Database??
+
             }
 
             if (previousBlock.NBits != newBlock.NBits)
@@ -247,38 +269,31 @@ namespace News_Blockchain
         /// <returns>true or false</returns>
         private bool CheckTransactionSignature(Transacation_Input transaction, Transacation_Output transaction_Output, string pubkey, string senderPublickKey)
         {
-            string pubkeyCoppy = pubkey;
+            //TODO: the parameters are null
+            using (ECDsa ecdsa = ECDsa.Create())
+            {
+                if (ecdsa != null)
+                {
+                    ECParameters ecParameters = ecdsa.ExportParameters(true);
+                    byte[] privateKey = ecParameters.D;
+                    byte[] publicKey = ecParameters.Q.X.Concat(ecParameters.Q.Y).ToArray();
 
+                    // Data to be signed
+                    string dataToSign = "Hello, World!";
+                    byte[] dataBytes = Encoding.UTF8.GetBytes(dataToSign);
+
+                    // Sign the data
+                    byte[] signature = ecdsa.SignData(dataBytes, HashAlgorithmName.SHA256);
+
+
+                    // Verify the signature
+                    bool isVerified = ecdsa.VerifyData(dataBytes, signature, HashAlgorithmName.SHA256);
+                }
+            }
+
+            string pubkeyCoppy = pubkey;
             string pubkeyHash = Helpers.ComputeSHA256Hash(pubkeyCoppy, 2);
             string publickKeyHash = Helpers.ComputeSHA256Hash(senderPublickKey, 2);
-
-            byte[] data = Encoding.ASCII.GetBytes("message");
-            byte[] hash = System.Security.Cryptography.SHA256.Create().ComputeHash(data);
-
-            RSAParameters sharedParameters;
-            byte[] signedHash;
-            //generate signature
-            using (RSA rsa = RSA.Create())
-            {
-                sharedParameters = rsa.ExportParameters(false);
-
-                RSAPKCS1SignatureFormatter rsaFormatter = new(rsa);
-                rsaFormatter.SetHashAlgorithm(nameof(Helpers.ComputeSHA256Hash));
-
-                signedHash = rsaFormatter.CreateSignature(hash);
-            }
-
-            //verify signature 
-            using (RSA rsa = RSA.Create())
-            {
-                rsa.ImportParameters(sharedParameters);
-
-                RSAPKCS1SignatureDeformatter rsaDeformatter = new(rsa);
-                rsaDeformatter.SetHashAlgorithm(nameof(Helpers.ComputeSHA256Hash));
-
-                if (!rsaDeformatter.VerifySignature(hash, signedHash))
-                    return false;
-            }
 
             if (pubkeyHash != publickKeyHash)
              return false;
