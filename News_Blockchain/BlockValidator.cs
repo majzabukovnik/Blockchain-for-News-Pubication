@@ -223,6 +223,7 @@ namespace News_Blockchain
         private double CalculateBlockFees(Block block)
         {
             double fees = 0;
+            
             foreach(Transaction t in block.Transactions)
             {
                 double inputValue = 0;
@@ -267,38 +268,14 @@ namespace News_Blockchain
         /// <param name="pubkey"></param>
         /// <param name="senderPublickKey"></param>
         /// <returns>true or false</returns>
-        private bool CheckTransactionSignature(Transacation_Input transaction, Transacation_Output transaction_Output, string pubkey, string senderPublickKey)
+        private bool CheckTransactionSignature(Transacation_Input transaction)
         {
-            //TODO: the parameters are null
-            using (ECDsa ecdsa = ECDsa.Create())
+     
+            using (ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.secp256k1)) // need to find a way to add secp256k1 curve
             {
-                if (ecdsa != null)
-                {
-                    ECParameters ecParameters = ecdsa.ExportParameters(true);
-                    byte[] privateKey = ecParameters.D;
-                    byte[] publicKey = ecParameters.Q.X.Concat(ecParameters.Q.Y).ToArray();
-
-                    // Data to be signed
-                    string dataToSign = "Hello, World!";
-                    byte[] dataBytes = Encoding.UTF8.GetBytes(dataToSign);
-
-                    // Sign the data
-                    byte[] signature = ecdsa.SignData(dataBytes, HashAlgorithmName.SHA256);
-
-
-                    // Verify the signature
-                    bool isVerified = ecdsa.VerifyData(dataBytes, signature, HashAlgorithmName.SHA256);
-                }
+                
             }
-
-            string pubkeyCoppy = pubkey;
-            string pubkeyHash = Helpers.ComputeSHA256Hash(pubkeyCoppy, 2);
-            string publickKeyHash = Helpers.ComputeSHA256Hash(senderPublickKey, 2);
-
-            if (pubkeyHash != publickKeyHash)
-             return false;
-
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -339,6 +316,22 @@ namespace News_Blockchain
             if ((average > newBlock.Time) && (newBlock.Time > unixTimestamp))
                 return false;
 
+            return true;
+        }
+        /// <summary>
+        /// fuction checks if there is a UTXO stored in the database
+        /// </summary>
+        /// <returns></returns>
+        private bool CheckForDoubleSpending(UTXOTrans uTXOTrans)
+        {
+            string? transaction = uTXOTrans.GetKey();
+
+            if(transaction != null)
+            {
+                //TODO: delete the retrived transaction from the database
+                return true;
+            }
+                
             return true;
         }
     }

@@ -27,7 +27,7 @@ namespace News_Blockchain
         private string _outpointHash;
         private int _outpointIndex;
         private int _scriptLenght;
-        private string _stringSignature;
+        private string _stringSignature; //
 
         public string OutpointHash { get { return _outpointHash; } set { _outpointHash = value; } }
         public int OutpointIndex { get { return _outpointIndex; } set { _outpointIndex = value; } }
@@ -47,7 +47,7 @@ namespace News_Blockchain
     {
         private double _value;
         private int _scriptLenght;
-        private List<string> _script;
+        private List<string> _script; //hashed pubkey
         private string _text;
 
         public double Value { get { return _value; } set { _value = value; } }
