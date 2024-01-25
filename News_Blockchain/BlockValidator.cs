@@ -12,6 +12,8 @@ using System.Globalization;
 using SshNet.Security.Cryptography;
 using System.Runtime.CompilerServices;
 
+using NBitcoin;
+
 namespace News_Blockchain
 {
     class BlockValidator
@@ -268,13 +270,21 @@ namespace News_Blockchain
         /// <param name="pubkey"></param>
         /// <param name="senderPublickKey"></param>
         /// <returns>true or false</returns>
-        private bool CheckTransactionSignature(Transacation_Input transaction)
+        private bool CheckTransactionSignature(Transacation_Input transactionI, Transacation_Output transactionO)
         {
-     
-            using (ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.secp256k1)) // need to find a way to add secp256k1 curve
-            {
-                
-            }
+            string publicKey = GenerateKeyPairs();
+            string senderPubKey; //TODO: need to retrive the script from the Transaction_Output List
+            string sig = transactionI.stringSignature;
+
+            string publicKeyCoppy = publicKey;
+
+            string pubKeyHash = Helpers.ComputeSHA256Hash(publicKey, 2);
+
+            if (senderPubKey != pubKeyHash)
+                return false;
+
+            
+
             return false;
         }
 
@@ -333,6 +343,19 @@ namespace News_Blockchain
             }
                 
             return true;
+        }
+        /// <summary>
+        /// this generates random PrivateKey, and using that key it generates a PublicKey
+        /// </summary>
+        /// <returns>public key</returns>
+        public string GenerateKeyPairs()
+        {
+            Key privateKey = new Key(); //the output here is private key = NBitcoin.Key
+            PubKey publicKey = privateKey.PubKey; //here the output is some string of caracters
+
+            string pubKey = publicKey.ToString();
+
+            return pubKey;
         }
     }
 }
