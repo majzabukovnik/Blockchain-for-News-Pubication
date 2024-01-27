@@ -13,6 +13,7 @@ using SshNet.Security.Cryptography;
 using System.Runtime.CompilerServices;
 
 using NBitcoin;
+using NBitcoin.Protocol;
 
 namespace News_Blockchain
 {
@@ -49,10 +50,10 @@ namespace News_Blockchain
 
             if (!CheckCoinbaseTransaction(block, blockHeight))
 
-            foreach (Transaction transaction in transactions)
-            {
-                InternalNodes[0].Add(Serializator.SerializeToString(transaction));
-            }
+                foreach (Transaction transaction in transactions)
+                {
+                    InternalNodes[0].Add(Serializator.SerializeToString(transaction));
+                }
 
             while (true)
             {
@@ -225,19 +226,19 @@ namespace News_Blockchain
         private double CalculateBlockFees(Block block)
         {
             double fees = 0;
-            
-            foreach(Transaction t in block.Transactions)
+
+            foreach (Transaction t in block.Transactions)
             {
                 double inputValue = 0;
                 double outputValue = 0;
 
-                foreach(Transacation_Input ti in t.Inputs)
+                foreach (Transacation_Input ti in t.Inputs)
                 {
                     //TODO: change 0 to appropriet function to call value from some output in previous transaction
                     inputValue += 0;
                 }
 
-                foreach(Transacation_Output to in t.Outputs)
+                foreach (Transacation_Output to in t.Outputs)
                 {
                     outputValue += to.Value;
                 }
@@ -272,8 +273,14 @@ namespace News_Blockchain
         /// <returns>true or false</returns>
         private bool CheckTransactionSignature(Transacation_Input transactionI, Transacation_Output transactionO)
         {
-            string publicKey = GenerateKeyPairs();
-            string senderPubKey; //TODO: need to retrive the script from the Transaction_Output List
+
+            var result = GenerateKeyPairs();
+            string publicKey = result.PublicKey;
+
+            List<string> transactionOutList = transactionO.Script;
+            string hashedPubKey = transactionOutList[2];
+            string senderPubKey = hashedPubKey;
+
             string sig = transactionI.stringSignature;
 
             string publicKeyCoppy = publicKey;
@@ -282,10 +289,14 @@ namespace News_Blockchain
 
             if (senderPubKey != pubKeyHash)
                 return false;
-
             
+            //the code needs some adjusting
+            //bool isValid = publicKey.Verify(transactionmessage sig);
+            
+            //if (!isValid)
+            //    return false;
 
-            return false;
+            return true;
         }
 
         /// <summary>
@@ -316,7 +327,7 @@ namespace News_Blockchain
         {
             List<Block> list = blockDB.GetLastSpecifiedBlocks(11);
             uint sumTime = 0;
-            foreach(Block block in list)
+            foreach (Block block in list)
             {
                 sumTime += block.Time;
             }
@@ -336,26 +347,47 @@ namespace News_Blockchain
         {
             string? transaction = uTXOTrans.GetKey();
 
-            if(transaction != null)
+            if (transaction != null)
             {
                 //TODO: delete the retrived transaction from the database
                 return true;
             }
-                
+
             return true;
         }
         /// <summary>
         /// this generates random PrivateKey, and using that key it generates a PublicKey
         /// </summary>
         /// <returns>public key</returns>
-        public string GenerateKeyPairs()
+        public (string PrivateKey, string PublicKey) GenerateKeyPairs()
         {
-            Key privateKey = new Key(); //the output here is private key = NBitcoin.Key
-            PubKey publicKey = privateKey.PubKey; //here the output is some string of caracters
+            var privateKey = new Key(); //the output here is:  KwHzUhQYiGWFP3YAanQi5zA4bEJUyMFc7hS5J24ZDmaMTbnrTTz2
+            var thePrivateKey = privateKey.GetWif(Network.Main).ToString();
+            var publicKey = privateKey.PubKey.ToString(); //here the output is: 03f7f19f862c293af75404bfdd6b12ab8c35de33871c87d57fb59b866e24d6e699
 
-            string pubKey = publicKey.ToString();
-
-            return pubKey;
+            return (thePrivateKey, publicKey);
         }
+        /// <summary>
+        /// the function generates a signature
+        /// </summary>
+        /// <returns>signature</returns>
+        public string GenerateSignature()
+        {
+            var result = GenerateKeyPairs();
+            string pkResult = result.PrivateKey;
+
+            Key privateKey = Key.Parse(pkResult, Network.Main);
+
+            string message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
+
+            uint256 tMessage = uint256.Parse(message);
+
+            var signature = privateKey.Sign(tMessage).ToString();
+            
+            Console.WriteLine(signature); //returns: NBitcoin.Crypto.ECDSASignature
+
+            return signature;
+        }
+
     }
-}
+} 
