@@ -14,6 +14,8 @@ using System.Runtime.CompilerServices;
 
 using NBitcoin;
 using NBitcoin.Protocol;
+using System.Security.Cryptography.X509Certificates;
+using NBitcoin.Crypto;
 
 namespace News_Blockchain
 {
@@ -153,7 +155,8 @@ namespace News_Blockchain
             {
                 if (newBlock.NBits != NewDifficulty(previousBlock.NBits, 0))
                     return false;
-                //TODO: In the above if find elegant way to input time diffrence between fist and last of 2016 blocks
+
+                // this shoul find the difference between first and last of 2016 blocks
                 int factor = 1;
                 int currentLimit = 2016 * factor;
                 while (blockHeight < currentLimit)
@@ -226,9 +229,9 @@ namespace News_Blockchain
         private double CalculateBlockFees(Block block)
         {
             double fees = 0;
-
+            
             foreach (Transaction t in block.Transactions)
-            {
+            {   
                 double inputValue = 0;
                 double outputValue = 0;
 
@@ -274,8 +277,8 @@ namespace News_Blockchain
         private bool CheckTransactionSignature(Transacation_Input transactionI, Transacation_Output transactionO)
         {
 
-            var result = GenerateKeyPairs();
-            string publicKey = result.PublicKey;
+            IDictionary<string, string> keyPairs = GenerateKeyPairs();
+            string publicKey = keyPairs["publicKey"];
 
             List<string> transactionOutList = transactionO.Script;
             string hashedPubKey = transactionOutList[2];
@@ -287,12 +290,14 @@ namespace News_Blockchain
 
             string pubKeyHash = Helpers.ComputeSHA256Hash(publicKey, 2);
 
-            if (senderPubKey != pubKeyHash)
-                return false;
-            
-            //the code needs some adjusting
-            //bool isValid = publicKey.Verify(transactionmessage sig);
-            
+            //string signature = GenerateSignature();
+            //var valid = VerifySignature(signature, keyPair.Public);
+
+
+            //if (senderPubKey != pubKeyHash)
+            //    return false;
+            //byte[] signatureBytes 
+            //bool isSignatureValid = publicKey.Verify(tMessage, new ECDSASignature(signatureBytes));
             //if (!isValid)
             //    return false;
 
@@ -349,7 +354,7 @@ namespace News_Blockchain
 
             if (transaction != null)
             {
-                //TODO: delete the retrived transaction from the database
+                
                 return true;
             }
 
@@ -359,35 +364,42 @@ namespace News_Blockchain
         /// this generates random PrivateKey, and using that key it generates a PublicKey
         /// </summary>
         /// <returns>public key</returns>
-        public (string PrivateKey, string PublicKey) GenerateKeyPairs()
+        private IDictionary<string, string> GenerateKeyPairs()
         {
-            var privateKey = new Key(); //the output here is:  KwHzUhQYiGWFP3YAanQi5zA4bEJUyMFc7hS5J24ZDmaMTbnrTTz2
+            var privateKey = new Key();
             var thePrivateKey = privateKey.GetWif(Network.Main).ToString();
-            var publicKey = privateKey.PubKey.ToString(); //here the output is: 03f7f19f862c293af75404bfdd6b12ab8c35de33871c87d57fb59b866e24d6e699
+            var publicKey = privateKey.PubKey.ToString();
 
-            return (thePrivateKey, publicKey);
+            var keyPairs = new Dictionary<string, string>
+            {
+                { "privateKey", thePrivateKey },
+                {    "publicKey", publicKey }
+            };
+
+            return keyPairs;
         }
         /// <summary>
         /// the function generates a signature
         /// </summary>
         /// <returns>signature</returns>
-        public string GenerateSignature()
+        private string GenerateSignature()
         {
-            var result = GenerateKeyPairs();
-            string pkResult = result.PrivateKey;
+            IDictionary<string, string> keyPairs = GenerateKeyPairs();
 
-            Key privateKey = Key.Parse(pkResult, Network.Main);
+            string privateKeyString = keyPairs["privateKey"];
+
+            Key privateKey = Key.Parse(privateKeyString, Network.Main);
 
             string message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
             uint256 tMessage = uint256.Parse(message);
 
-            var signature = privateKey.Sign(tMessage).ToString();
-            
-            Console.WriteLine(signature); //returns: NBitcoin.Crypto.ECDSASignature
+            ECDSASignature signature = privateKey.Sign(tMessage);
 
-            return signature;
+            byte[] signatureBytes = signature.ToDER();
+            string signatureHex = BitConverter.ToString(signatureBytes).Replace("-", "").ToLower(); //this returns: 304402205c36a01395a8d91f5d33dac2fe47fc6cb76d0248be5184909eecef42e7090c1d02205461d46df09b962a71fae1be82a6f5ffe212c227d3cc3dc0ed3c5e86832415a4
+
+            return signatureHex;
         }
-
     }
 } 
