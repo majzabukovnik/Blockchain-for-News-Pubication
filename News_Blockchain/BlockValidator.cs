@@ -37,7 +37,7 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="transactions"></param>
         /// <returns>Merkle root hash value</returns>
-        private string MerkleRootHash(List<Transaction> transactions)
+        public string MerkleRootHash(List<Transaction> transactions)
         {
             List<List<string>> InternalNodes = new List<List<string>>();
             int height = 0;
@@ -122,7 +122,7 @@ namespace News_Blockchain
         /// <param name="oldNbits"></param>
         /// <param name="timeDifference"></param>
         /// <returns>new nBits target</returns>
-        private uint NewDifficulty(uint oldNbits, int timeDifference)
+        public uint NewDifficulty(uint oldNbits, int timeDifference)
         {
             uint oldDifficulty = CalculateDifficulty(oldNbits);
             double newDifficulty = oldDifficulty * (double)(BLOCKS_PER_DIFFICULTY_READJUSTMENT * TARGET_BLOCK_TIME) / timeDifference;
