@@ -81,7 +81,7 @@ namespace News_Blockchain
         /// <param name="headerHash"></param>
         /// <param name="nBits"></param>
         /// <returns>true or false</returns>
-        private bool CheckHashDifficultyTarget(string headerHash, uint nBits)
+        public bool CheckHashDifficultyTarget(string headerHash, uint nBits)
         {
             BigInteger target = DecompressNbits(nBits);
 
@@ -122,7 +122,7 @@ namespace News_Blockchain
         /// <param name="oldNbits"></param>
         /// <param name="timeDifference"></param>
         /// <returns>new nBits target</returns>
-        public uint NewDifficulty(uint oldNbits, int timeDifference)
+        public uint NewDifficulty(uint oldNbits, uint timeDifference)
         {
             uint oldDifficulty = CalculateDifficulty(oldNbits);
             double newDifficulty = oldDifficulty * (double)(BLOCKS_PER_DIFFICULTY_READJUSTMENT * TARGET_BLOCK_TIME) / timeDifference;
