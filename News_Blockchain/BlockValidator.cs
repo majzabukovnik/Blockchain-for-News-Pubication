@@ -84,6 +84,7 @@ namespace News_Blockchain
 
         /// <summary>
         /// Function checks if provided hash satisfies nBits requirement.
+        /// Function checks if provided hash satisfies nBits requirement
         /// It is not intended to be used for mining, because target is calculated every time.
         /// </summary>
         /// <param name="headerHash"></param>
@@ -130,7 +131,7 @@ namespace News_Blockchain
         /// <param name="oldNbits"></param>
         /// <param name="timeDifference"></param>
         /// <returns>new nBits target</returns>
-        private uint NewDifficulty(uint oldNbits, int timeDifference)
+        private uint NewDifficulty(uint oldNbits, uint timeDifference)
         {
             uint oldDifficulty = CalculateDifficulty(oldNbits);
             double newDifficulty = oldDifficulty * (double)(BLOCKS_PER_DIFFICULTY_READJUSTMENT * TARGET_BLOCK_TIME) / timeDifference;
@@ -153,30 +154,10 @@ namespace News_Blockchain
         {
             if (blockHeight % 2016 == 0)
             {
-                if (newBlock.NBits != NewDifficulty(previousBlock.NBits, 0))
+                uint timeDiff = newBlock.Time - blockDB.GetLastSpecifiedBlocks(newBlock.Index)[0].Time;
+                
+                if (newBlock.NBits != NewDifficulty(previousBlock.NBits, timeDiff))
                     return false;
-
-                // this shoul find the difference between first and last of 2016 blocks
-                int factor = 1;
-                int currentLimit = 2016 * factor;
-                while (blockHeight < currentLimit)
-                {
-                    int specifiedBlocks = currentLimit;
-                    int lastBlock = specifiedBlocks - 1;
-                    int firstBlock = lastBlock - 2015;
-
-                    List<Block> list = blockDB.GetLastSpecifiedBlocks(specifiedBlocks);
-                    uint block1Time = list.ElementAt(firstBlock).Time;
-                    uint block2015Time = list.ElementAt(lastBlock).Time;
-
-                    uint timeDifference = block1Time - block1Time;
-                }
-                if (blockHeight > currentLimit)
-                {
-                    factor++;
-                }
-                //to use this more elegantly maybe add a function to call blocks by their height in Database??
-
             }
 
             if (previousBlock.NBits != newBlock.NBits)
