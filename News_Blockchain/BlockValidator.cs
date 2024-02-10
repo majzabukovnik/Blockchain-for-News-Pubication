@@ -11,7 +11,6 @@ using System.Security.Cryptography;
 using System.Globalization;
 using SshNet.Security.Cryptography;
 using System.Runtime.CompilerServices;
-
 using NBitcoin;
 using NBitcoin.Protocol;
 using System.Security.Cryptography.X509Certificates;
@@ -73,6 +72,7 @@ namespace News_Blockchain
                             InternalNodes[height - 1][index] + InternalNodes[height - 1][index]));
                         break;
                     }
+
                     if (index == InternalNodes[height - 1].Count)
                         break;
 
@@ -134,7 +134,8 @@ namespace News_Blockchain
         private uint NewDifficulty(uint oldNbits, uint timeDifference)
         {
             uint oldDifficulty = CalculateDifficulty(oldNbits);
-            double newDifficulty = oldDifficulty * (double)(BLOCKS_PER_DIFFICULTY_READJUSTMENT * TARGET_BLOCK_TIME) / timeDifference;
+            double newDifficulty = oldDifficulty * (double)(BLOCKS_PER_DIFFICULTY_READJUSTMENT * TARGET_BLOCK_TIME) /
+                                   timeDifference;
             uint newNbits = (uint)(DEFAULT_NBITS / newDifficulty);
 
             if (newNbits > DEFAULT_NBITS)
@@ -161,12 +162,13 @@ namespace News_Blockchain
         /// <param name="newBlock"></param>
         /// <param name="blockHeight"></param>
         /// <returns>true or false</returns>
-        private bool EvaluateCorrectnessOfBlockDifficulty(Block previousBlock, Block newBlock, int blockHeight, BlockDB blockDB)
+        private bool EvaluateCorrectnessOfBlockDifficulty(Block previousBlock, Block newBlock, int blockHeight,
+            BlockDB blockDB)
         {
             if (blockHeight % 2016 == 0)
             {
                 uint timeDiff = newBlock.Time - blockDB.GetLastSpecifiedBlocks(newBlock.Index)[0].Time;
-                
+
                 if (newBlock.NBits != NewDifficulty(previousBlock.NBits, timeDiff))
                     return false;
             }
@@ -176,6 +178,7 @@ namespace News_Blockchain
 
             return true;
         }
+
         /// <summary>
         /// Function checks if block size is equal or less than 1MB
         /// </summary>
@@ -221,35 +224,38 @@ namespace News_Blockchain
         private double CalculateBlockFees(Block block)
         {
             double fees = 0;
-            
+
             foreach (Transaction t in block.Transactions)
-            {   
+            {
                 double inputValue = 0;
                 double outputValue = 0;
 
                 foreach (Transacation_Input ti in t.Inputs)
                 {
-                     // UTCOTrans trx = GetRecord(ti.OutpointHash + "-" + ti.OutpointIndex);
-                     UTXOTrans trx = new UTXOTrans("", 1, "");
-                     //Block block = BlockDB.GetRecord(trx.HashBlock);
-                     Block originBlock = new Block("", "", 0, 0, 0, new List<Transaction>());
+                    UTXODB utxoDB = new UTXODB();
+                    UTXOTrans trx = utxoDB.GetRecord(ti.OutpointHash + "-" + ti.OutpointIndex);
+                    
+                    BlockDB blockDB = new BlockDB();
+                    Block originBlock = blockDB.GetRecord(trx.HashBlock);
 
-                     foreach (Transaction blockTrx in originBlock.Transactions)
-                     {
-                         if (Helpers.GetTransactionHash(blockTrx) == trx.HashTrans)
-                         {
-                             inputValue += blockTrx.Outputs[trx.Index].Value;
-                             break;
-                         }
-                     }
+                    foreach (Transaction blockTrx in originBlock.Transactions)
+                    {
+                        if (Helpers.GetTransactionHash(blockTrx) == trx.HashTrans)
+                        {
+                            inputValue += blockTrx.Outputs[trx.Index].Value;
+                            break;
+                        }
+                    }
                 }
 
                 foreach (Transacation_Output to in t.Outputs)
                 {
                     outputValue += to.Value;
                 }
+
                 fees += inputValue - outputValue;
             }
+
             return fees;
         }
 
@@ -279,7 +285,6 @@ namespace News_Blockchain
         /// <returns>true or false</returns>
         private bool CheckTransactionSignature(Transacation_Input transactionI, Transacation_Output transactionO)
         {
-
             IDictionary<string, string> keyPairs = GenerateKeyPairs();
             string publicKey = keyPairs["publicKey"];
 
@@ -339,6 +344,7 @@ namespace News_Blockchain
             {
                 sumTime += block.Time;
             }
+
             uint average = sumTime / 11;
             uint unixTimestamp = (uint)DateTime.UtcNow.AddHours(2).Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
 
@@ -347,6 +353,7 @@ namespace News_Blockchain
 
             return true;
         }
+
         /// <summary>
         /// fuction checks if there is a UTXO stored in the database
         /// </summary>
@@ -357,12 +364,12 @@ namespace News_Blockchain
 
             if (transaction != null)
             {
-                
                 return true;
             }
 
             return true;
         }
+
         /// <summary>
         /// this generates random PrivateKey, and using that key it generates a PublicKey
         /// </summary>
@@ -376,11 +383,12 @@ namespace News_Blockchain
             var keyPairs = new Dictionary<string, string>
             {
                 { "privateKey", thePrivateKey },
-                {    "publicKey", publicKey }
+                { "publicKey", publicKey }
             };
 
             return keyPairs;
         }
+
         /// <summary>
         /// the function generates a signature
         /// </summary>
@@ -400,9 +408,12 @@ namespace News_Blockchain
             ECDSASignature signature = privateKey.Sign(tMessage);
 
             byte[] signatureBytes = signature.ToDER();
-            string signatureHex = BitConverter.ToString(signatureBytes).Replace("-", "").ToLower(); //this returns: 304402205c36a01395a8d91f5d33dac2fe47fc6cb76d0248be5184909eecef42e7090c1d02205461d46df09b962a71fae1be82a6f5ffe212c227d3cc3dc0ed3c5e86832415a4
+            string
+                signatureHex =
+                    BitConverter.ToString(signatureBytes).Replace("-", "")
+                        .ToLower(); //this returns: 304402205c36a01395a8d91f5d33dac2fe47fc6cb76d0248be5184909eecef42e7090c1d02205461d46df09b962a71fae1be82a6f5ffe212c227d3cc3dc0ed3c5e86832415a4
 
             return signatureHex;
         }
     }
-} 
+}
