@@ -10,6 +10,12 @@ using System.Diagnostics.Contracts;
 using System.Security.Cryptography;
 using System.Globalization;
 using SshNet.Security.Cryptography;
+using System.Runtime.CompilerServices;
+
+using NBitcoin;
+using NBitcoin.Protocol;
+using System.Security.Cryptography.X509Certificates;
+using NBitcoin.Crypto;
 
 namespace News_Blockchain
 {
@@ -37,17 +43,19 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="transactions"></param>
         /// <returns>Merkle root hash value</returns>
-        private string MerkleRootHash(List<Transaction> transactions)
+        private string MerkleRootHash(List<Transaction> transactions, Block block, int blockHeight)
         {
             List<List<string>> InternalNodes = new List<List<string>>();
             int height = 0;
 
             InternalNodes.Add(new List<string>());
-            //TODO: Add validation that first transaction in the list is coinbase transaction
-            foreach (Transaction transaction in transactions)
-            {
-                InternalNodes[0].Add(Serializator.SerializeToString(transaction));
-            }
+
+            if (!CheckCoinbaseTransaction(block, blockHeight))
+
+                foreach (Transaction transaction in transactions)
+                {
+                    InternalNodes[0].Add(Serializator.SerializeToString(transaction));
+                }
 
             while (true)
             {
@@ -141,13 +149,34 @@ namespace News_Blockchain
         /// <param name="newBlock"></param>
         /// <param name="blockHeight"></param>
         /// <returns>true or false</returns>
-        private bool EvaluateCorrectnessOfBlockDifficulty(Block previousBlock, Block newBlock, int blockHeight)
+        private bool EvaluateCorrectnessOfBlockDifficulty(Block previousBlock, Block newBlock, int blockHeight, BlockDB blockDB)
         {
             if (blockHeight % 2016 == 0)
             {
                 if (newBlock.NBits != NewDifficulty(previousBlock.NBits, 0))
                     return false;
-                //TODO: In the above if find elegant way to input time diffrence between fist and last of 2016 blocks
+
+                // this shoul find the difference between first and last of 2016 blocks
+                int factor = 1;
+                int currentLimit = 2016 * factor;
+                while (blockHeight < currentLimit)
+                {
+                    int specifiedBlocks = currentLimit;
+                    int lastBlock = specifiedBlocks - 1;
+                    int firstBlock = lastBlock - 2015;
+
+                    List<Block> list = blockDB.GetLastSpecifiedBlocks(specifiedBlocks);
+                    uint block1Time = list.ElementAt(firstBlock).Time;
+                    uint block2015Time = list.ElementAt(lastBlock).Time;
+
+                    uint timeDifference = block1Time - block1Time;
+                }
+                if (blockHeight > currentLimit)
+                {
+                    factor++;
+                }
+                //to use this more elegantly maybe add a function to call blocks by their height in Database??
+
             }
 
             if (previousBlock.NBits != newBlock.NBits)
@@ -200,18 +229,19 @@ namespace News_Blockchain
         private double CalculateBlockFees(Block block)
         {
             double fees = 0;
-            foreach(Transaction t in block.Transactions)
-            {
+            
+            foreach (Transaction t in block.Transactions)
+            {   
                 double inputValue = 0;
                 double outputValue = 0;
 
-                foreach(Transacation_Input ti in t.Inputs)
+                foreach (Transacation_Input ti in t.Inputs)
                 {
                     //TODO: change 0 to appropriet function to call value from some output in previous transaction
                     inputValue += 0;
                 }
 
-                foreach(Transacation_Output to in t.Outputs)
+                foreach (Transacation_Output to in t.Outputs)
                 {
                     outputValue += to.Value;
                 }
@@ -244,19 +274,32 @@ namespace News_Blockchain
         /// <param name="pubkey"></param>
         /// <param name="senderPublickKey"></param>
         /// <returns>true or false</returns>
-        private bool CheckTransactionSignature(Transacation_Input transaction, Transacation_Output transaction_Output, string pubkey, string senderPublickKey, string signature)
+        private bool CheckTransactionSignature(Transacation_Input transactionI, Transacation_Output transactionO)
         {
-            string pubkeyCoppy = pubkey;
 
-            string pubkeyHash = Helpers.ComputeSHA256Hash(pubkeyCoppy, 2);
-            string publickKeyHash = Helpers.ComputeSHA256Hash(senderPublickKey, 2);
-            string signatureHash = Helpers.ComputeSHA256Hash(transaction.stringSignature, 2);
+            IDictionary<string, string> keyPairs = GenerateKeyPairs();
+            string publicKey = keyPairs["publicKey"];
 
-            if (pubkeyHash != publickKeyHash)
-                return false;
+            List<string> transactionOutList = transactionO.Script;
+            string hashedPubKey = transactionOutList[2];
+            string senderPubKey = hashedPubKey;
 
-           // if (pubkeyHash != privateKeyHash)
-             //   return false;
+            string sig = transactionI.stringSignature;
+
+            string publicKeyCoppy = publicKey;
+
+            string pubKeyHash = Helpers.ComputeSHA256Hash(publicKey, 2);
+
+            //string signature = GenerateSignature();
+            //var valid = VerifySignature(signature, keyPair.Public);
+
+
+            //if (senderPubKey != pubKeyHash)
+            //    return false;
+            //byte[] signatureBytes 
+            //bool isSignatureValid = publicKey.Verify(tMessage, new ECDSASignature(signatureBytes));
+            //if (!isValid)
+            //    return false;
 
             return true;
         }
@@ -264,16 +307,99 @@ namespace News_Blockchain
         /// <summary>
         /// Function checks if block height of a coinbase transaction is greater than 100
         /// </summary>
-        /// <param name="height"></param>
+        /// /// <param name="block">block that contains coinbase trx</param>
+        /// /// <param name="trxHeight">blocks height</param>
+        /// <param name="currentHeight">current height</param>
         /// <returns>ture of false</returns>
-        private bool CoinbaseTransactionMaturity(Block block, int height, int currentHeight)
+        private bool CoinbaseTransactionMaturity(Block block, int trxHeight, int currentHeight)
         {
-            if (CheckCoinbaseTransaction(block, height) == true)
+            if (!CheckCoinbaseTransaction(block, trxHeight))
+                return false;
 
-            if ((currentHeight - height) < 100)
+            if (currentHeight - trxHeight < 100)
                 return false;
 
             return true;
         }
+
+        /// <summary>
+        /// Function checks the average time of previous 11 blocks and if the current block is less than 2 hours
+        /// </summary>
+        /// <param name="blockDB"></param>
+        /// <param name="newBlock"></param>
+        /// <returns>true or false</returns>
+        private bool CheckForBlockTime(BlockDB blockDB, Block newBlock)
+        {
+            List<Block> list = blockDB.GetLastSpecifiedBlocks(11);
+            uint sumTime = 0;
+            foreach (Block block in list)
+            {
+                sumTime += block.Time;
+            }
+            uint average = sumTime / 11;
+            uint unixTimestamp = (uint)DateTime.UtcNow.AddHours(2).Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
+
+            if ((average > newBlock.Time) && (newBlock.Time > unixTimestamp))
+                return false;
+
+            return true;
+        }
+        /// <summary>
+        /// fuction checks if there is a UTXO stored in the database
+        /// </summary>
+        /// <returns></returns>
+        private bool CheckForDoubleSpending(UTXOTrans uTXOTrans)
+        {
+            string? transaction = uTXOTrans.GetKey();
+
+            if (transaction != null)
+            {
+                
+                return true;
+            }
+
+            return true;
+        }
+        /// <summary>
+        /// this generates random PrivateKey, and using that key it generates a PublicKey
+        /// </summary>
+        /// <returns>public key</returns>
+        private IDictionary<string, string> GenerateKeyPairs()
+        {
+            var privateKey = new Key();
+            var thePrivateKey = privateKey.GetWif(Network.Main).ToString();
+            var publicKey = privateKey.PubKey.ToString();
+
+            var keyPairs = new Dictionary<string, string>
+            {
+                { "privateKey", thePrivateKey },
+                {    "publicKey", publicKey }
+            };
+
+            return keyPairs;
+        }
+        /// <summary>
+        /// the function generates a signature
+        /// </summary>
+        /// <returns>signature</returns>
+        private string GenerateSignature()
+        {
+            IDictionary<string, string> keyPairs = GenerateKeyPairs();
+
+            string privateKeyString = keyPairs["privateKey"];
+
+            Key privateKey = Key.Parse(privateKeyString, Network.Main);
+
+            string message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
+
+            uint256 tMessage = uint256.Parse(message);
+
+            ECDSASignature signature = privateKey.Sign(tMessage);
+
+            byte[] signatureBytes = signature.ToDER();
+            string signatureHex = BitConverter.ToString(signatureBytes).Replace("-", "").ToLower(); //this returns: 304402205c36a01395a8d91f5d33dac2fe47fc6cb76d0248be5184909eecef42e7090c1d02205461d46df09b962a71fae1be82a6f5ffe212c227d3cc3dc0ed3c5e86832415a4
+
+            return signatureHex;
+        }
     }
-}
+} 
