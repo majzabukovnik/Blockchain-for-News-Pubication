@@ -142,6 +142,12 @@ namespace News_Blockchain
             return newNbits;
         }
 
+        /// <summary>
+        /// Function checks if new block's index is in the right order
+        /// </summary>
+        /// <param name="previousBlock"></param>
+        /// <param name="newBlock"></param>
+        /// <returns>true or false</returns>
         private bool CheckIndex(Block previousBlock, Block newBlock)
         {
             return previousBlock.Index + 1 == newBlock.Index;
@@ -223,8 +229,19 @@ namespace News_Blockchain
 
                 foreach (Transacation_Input ti in t.Inputs)
                 {
-                    //TODO: change 0 to appropriet function to call value from some output in previous transaction
-                    inputValue += 0;
+                     // UTCOTrans trx = GetRecord(ti.OutpointHash + "-" + ti.OutpointIndex);
+                     UTXOTrans trx = new UTXOTrans("", 1, "");
+                     //Block block = BlockDB.GetRecord(trx.HashBlock);
+                     Block originBlock = new Block("", "", 0, 0, 0, new List<Transaction>());
+
+                     foreach (Transaction blockTrx in originBlock.Transactions)
+                     {
+                         if (Helpers.GetTransactionHash(blockTrx) == trx.HashTrans)
+                         {
+                             inputValue += blockTrx.Outputs[trx.Index].Value;
+                             break;
+                         }
+                     }
                 }
 
                 foreach (Transacation_Output to in t.Outputs)
