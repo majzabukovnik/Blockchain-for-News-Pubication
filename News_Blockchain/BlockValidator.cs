@@ -142,6 +142,11 @@ namespace News_Blockchain
             return newNbits;
         }
 
+        private bool CheckIndex(Block previousBlock, Block newBlock)
+        {
+            return previousBlock.Index + 1 == newBlock.Index;
+        }
+
         /// <summary>
         /// Function checks if provided nBits in a block are correct. It also takes into
         /// account difficulty readjustment.
