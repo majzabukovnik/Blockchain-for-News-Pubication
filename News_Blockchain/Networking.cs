@@ -4,8 +4,15 @@ using System.Text;
 
 namespace News_Blockchain;
 
+public struct Peers
+{
+    
+}
+
 public class Networking
 {
+    
+    
     public Networking()
     {
         

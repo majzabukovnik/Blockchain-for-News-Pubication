@@ -2,10 +2,41 @@ using System.Text;
 
 namespace News_Blockchain;
 
+ public struct Request
+ {
+     private bool lastBlock;
+     private int specifiedBlock;
+     
+     public bool LastBlock
+     {
+         get { return lastBlock; }
+         set { lastBlock = value; }
+     }
+     
+     public int SpecifiedBlock
+     {
+         get { return specifiedBlock; }
+         set
+         {
+             if (value >= 0)
+             {
+                 specifiedBlock = value;
+             }
+         }
+     }
+    /// <summary>
+    /// Returns -1 if it needs the last block and an int if it needs a specific block
+    /// </summary>
+    /// <returns></returns>
+     public int GetBlockIndex()
+     {
+         return lastBlock == true ? -1 : specifiedBlock;
+     }
+ }
+
 public class Message
 {
-    //vrsta sporocila se manjka // 
-    
+    public Request _request;
     private byte[] _block;
     private byte[] _transaction;
 
@@ -25,7 +56,9 @@ public class Message
     public Type GetMessageType()
     {
         if (_block != null) return _block.GetType();
-        else return _transaction.GetType();
+        else if (_transaction != null) return _transaction.GetType();
+        else return _request.GetType();
+        
     }
 
     public Block GetBlock()
