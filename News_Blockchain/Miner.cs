@@ -14,13 +14,13 @@ public class Miner
     {
         BlockValidator validator = new BlockValidator();
         
-        //Time
+        
         uint nbits = block.NBits % 2016 != 0  ? block.NBits : validator.NewDifficulty(block.NBits,  block.Time  - blockDb.GetLastSpecifiedBlocks(2016).Last().Time );
         while (true)
         {
             if (validator.CheckHashDifficultyTarget(Helpers.GetBlockHash(block), block.NBits)) break;
             block.Nonce++;
         }
-        // nonce++;
+        
     }
 }
