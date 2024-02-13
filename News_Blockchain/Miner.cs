@@ -9,7 +9,7 @@ public class Miner
     // Time - ta cas v unix (current time)
     // nbits - ce je trenutni height ni deljiv z 2016(uporabis prejsni nbits), ce je klices NewDifficulty, time difrences time - 2016 block nazaj
     //nonce - poklicem ComputeSHA256Hash input serializirana vrednost blocka, ena ponovitev 
-
+    private bool _mining = true;
     private BlockDB _blockDb;
     private BlockValidator _blockValidator;
     public Miner(List<Transaction> transactions,BlockDB blockDb)
@@ -18,7 +18,7 @@ public class Miner
 
         Block block = CreateABlock(transactions);
         uint nbits = block.NBits % 2016 != 0  ? block.NBits : validator.NewDifficulty(block.NBits,  block.Time  - blockDb.GetLastSpecifiedBlocks(2016).Last().Time );
-        while (true)
+        while (_mining)
         {
             if (validator.CheckHashDifficultyTarget(Helpers.GetBlockHash(block), block.NBits)) break;
             block.Nonce++;
@@ -33,8 +33,8 @@ public class Miner
         return block;
     }
 
-    public void Dispose()
+    public void Stop()
     {
-        Dispose();
+        _mining = false;
     }
 }
