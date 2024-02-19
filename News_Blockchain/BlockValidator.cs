@@ -39,39 +39,25 @@ namespace News_Blockchain
         /// <returns>Merkle root hash value</returns>
         public string MerkleRootHash(List<Transaction> transactions)
         {
-            List<List<string>> InternalNodes = new List<List<string>>();
-            int height = 0;
+            List<string> hashes = new List<string>();
+            foreach (Transaction t in transactions)
+                hashes.Add(Helpers.GetTransactionHash(t));
 
-            InternalNodes.Add(new List<string>());
-            //TODO: Add validation that first transaction in the list is coinbase transaction
-            foreach (Transaction transaction in transactions)
+            int end = hashes.Count - 1;
+            while (end != 0)
             {
-                InternalNodes[0].Add(Serializator.SerializeToString(transaction));
-            }
-
-            while (true)
-            {
-                InternalNodes.Add(new List<string>());
-                height++;
-
-                for (int index = 0; true; index += 2)
+                for(int i = 0; i <= end; i += 2)
                 {
-                    if (InternalNodes[height - 1].Count == 1)
-                        return InternalNodes[height - 1][0];
-
-                    if (index + 1 == InternalNodes[height - 1].Count)
+                    if (i == end)
                     {
-                        InternalNodes[height].Add(Helpers.ComputeSHA256Hash(
-                            InternalNodes[height - 1][index] + InternalNodes[height - 1][index]));
-                        break;
+                        hashes[i / 2] = Helpers.ComputeSHA256Hash(hashes[i] + hashes[i]);
                     }
-                    if (index == InternalNodes[height - 1].Count)
-                        break;
-
-                    InternalNodes[height].Add(Helpers.ComputeSHA256Hash(
-                        InternalNodes[height - 1][index] + InternalNodes[height - 1][index + 1]));
+                    else hashes[i / 2] = Helpers.ComputeSHA256Hash(hashes[i] + hashes[i + 1]);
                 }
+                end /= 2;
             }
+
+            return hashes[0];
         }
 
         /// <summary>
