@@ -12,6 +12,8 @@ namespace News_Blockchain
         private const int TARGET_BLOCK_TIME = 10;
         private const int BLOCKS_PER_DIFFICULTY_READJUSTMENT = 2016;
         private const string FILE_WITH_KEYS = "key.txt";
+        private static BigInteger currentTarget;
+        private static uint currentNbits;
 
         /// <summary>
         /// Function checks given block for any potential rule violations and marks it as
@@ -65,7 +67,13 @@ namespace News_Blockchain
         /// <returns>true or false</returns>
         public static bool CheckHashDifficultyTarget(string headerHash, uint nBits)
         {
-            BigInteger target = DecompressNbits(nBits);
+            BigInteger target = currentTarget;
+            
+            if (nBits != currentNbits)
+            {
+                target = DecompressNbits(nBits);
+                currentNbits = nBits;
+            }
 
             BigInteger hexHashValue = BigInteger.Parse("0" + headerHash, System.Globalization.NumberStyles.HexNumber);
 
@@ -95,7 +103,8 @@ namespace News_Blockchain
         {
             int significand = int.Parse(nBits.ToString("X").Substring(2), System.Globalization.NumberStyles.HexNumber);
             int exponent = int.Parse(nBits.ToString("X").Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
-            return significand * BigInteger.Pow(256, exponent - 3);
+            currentTarget = significand * BigInteger.Pow(256, exponent - 3);
+            return currentTarget;
         }
 
         /// <summary>
