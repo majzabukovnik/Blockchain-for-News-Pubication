@@ -47,6 +47,18 @@ namespace News_Blockchain
             return JsonSerializer.Deserialize<Transaction>(transaction);
 
         }
+
+
+        public static string SerializeToString(Message msg)
+        {
+	        return JsonSerializer.Serialize<Message>(msg);
+        }
+
+        public static Message DeserializeMessage(string msg)
+        {
+	        return JsonSerializer.Deserialize<Message>(msg);
+        }
+        
     }
 
     public static class Helpers

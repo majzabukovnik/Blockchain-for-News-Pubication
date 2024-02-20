@@ -37,20 +37,25 @@ namespace News_Blockchain;
 public class Message
 {
     public Request _request;
-    private byte[] _block;
-    private byte[] _transaction;
+   // private byte[] _block;
+   private Block _block;
+    //private byte[] _transaction;
+    private Transaction _transaction;
 
-    public byte[] Block => _block;
-    public byte[] Transaction => _transaction;
+    //public byte[] Block => _block;
+    
+    //public byte[] Transaction => _transaction;
 
     public Message(Block block)
     {
-        _block = Encoding.UTF8.GetBytes(Serializator.SerializeToString(block));
+        //_block = Encoding.UTF8.GetBytes(Serializator.SerializeToString(block));
+        _block = block;
     }
 
     public Message(Transaction transaction)
     {
-        _transaction = Encoding.UTF8.GetBytes(Serializator.SerializeToString(transaction));
+        //_transaction = Encoding.UTF8.GetBytes(Serializator.SerializeToString(transaction));
+        _transaction = transaction;
     }
 
     public Type GetMessageType()
@@ -63,12 +68,14 @@ public class Message
 
     public Block GetBlock()
     {
-        return Serializator.DeserializeToBlock(Encoding.UTF8.GetString(_block));
+        //return Serializator.DeserializeToBlock(Encoding.UTF8.GetString(_block));
+        return _block;
     }
 
     public Transaction GetTransaction()
     {
-        return Serializator.DeserializeToTransaction(Encoding.UTF8.GetString(_transaction));
+        //return Serializator.DeserializeToTransaction(Encoding.UTF8.GetString(_transaction));
+        return _transaction;
     }
     
 
