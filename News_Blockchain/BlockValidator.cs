@@ -2,7 +2,6 @@
 //https://github.com/starkbank/ecdsa-dotnet?tab=readme-ov-file
 using EllipticCurve;
 using System.IO;
-using NBitcoin.RPC;
 
 namespace News_Blockchain
 {
@@ -31,44 +30,27 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="transactions"></param>
         /// <returns>Merkle root hash value</returns>
-        public static string MerkleRootHash(List<Transaction> transactions, Block block, int blockHeight)
+        public static string MerkleRootHash(List<Transaction> transactions)
         {
-            List<List<string>> InternalNodes = new List<List<string>>();
-            int height = 0;
+            List<string> hashes = new List<string>();
+            foreach (Transaction t in transactions)
+                hashes.Add(Helpers.GetTransactionHash(t));
 
-            InternalNodes.Add(new List<string>());
-
-            if (!CheckCoinbaseTransaction(block, blockHeight))
-
-                foreach (Transaction transaction in transactions)
-                {
-                    InternalNodes[0].Add(Serializator.SerializeToString(transaction));
-                }
-
-            while (true)
+            int end = hashes.Count - 1;
+            while (end != 0)
             {
-                InternalNodes.Add(new List<string>());
-                height++;
-
-                for (int index = 0; true; index += 2)
+                for(int i = 0; i <= end; i += 2)
                 {
-                    if (InternalNodes[height - 1].Count == 1)
-                        return InternalNodes[height - 1][0];
-
-                    if (index + 1 == InternalNodes[height - 1].Count)
+                    if (i == end)
                     {
-                        InternalNodes[height].Add(Helpers.ComputeSHA256Hash(
-                            InternalNodes[height - 1][index] + InternalNodes[height - 1][index]));
-                        break;
+                        hashes[i / 2] = Helpers.ComputeSHA256Hash(hashes[i] + hashes[i]);
                     }
-
-                    if (index == InternalNodes[height - 1].Count)
-                        break;
-
-                    InternalNodes[height].Add(Helpers.ComputeSHA256Hash(
-                        InternalNodes[height - 1][index] + InternalNodes[height - 1][index + 1]));
+                    else hashes[i / 2] = Helpers.ComputeSHA256Hash(hashes[i] + hashes[i + 1]);
                 }
+                end /= 2;
             }
+
+            return hashes[0];
         }
 
         /// <summary>
@@ -83,9 +65,10 @@ namespace News_Blockchain
         {
             BigInteger target = DecompressNbits(nBits);
 
-            BigInteger HexHashValue = BigInteger.Parse(headerHash, System.Globalization.NumberStyles.HexNumber);
-
-            if (HexHashValue > target)
+            BigInteger hexHashValue = BigInteger.Parse("0" + headerHash, System.Globalization.NumberStyles.HexNumber);
+            
+            //targetu prištejemo to število s čimer si zmanjšamo št kombinacij privzete težavnosti 256x
+            if (hexHashValue > target + new BigInteger(Math.Pow(16, 57)))
                 return false;
 
             return true;
