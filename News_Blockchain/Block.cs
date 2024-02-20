@@ -10,6 +10,7 @@ namespace News_Blockchain
         private uint _time;
         private uint _nBits;
         private uint _nonce;
+        private int _index;
         private List<Transaction> _transactions;
 
 
@@ -18,6 +19,7 @@ namespace News_Blockchain
         public uint Time { get { return _time; } set { _time = value; } }
         public uint NBits { get { return _nBits; } set { _nBits = value; } }
         public uint Nonce { get { return _nonce; } set { _nonce = value; } }
+        public int Index { get { return _index; } set { _index = value; } }
         public List<Transaction> Transactions { get { return _transactions; } set { _transactions = value; } }
 
 
