@@ -1,15 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Numerics;
-using System.ComponentModel.Design;
-using System.Runtime.InteropServices;
-using System.Diagnostics.Contracts;
-using System.Security.Cryptography;
-using System.Globalization;
-using SshNet.Security.Cryptography;
+using EllipticCurve;
 
 namespace News_Blockchain
 {
@@ -73,7 +64,8 @@ namespace News_Blockchain
 
             BigInteger hexHashValue = BigInteger.Parse("0" + headerHash, System.Globalization.NumberStyles.HexNumber);
             
-            if (hexHashValue > target)
+            //targetu prištejemo to število s čimer si zmanjšamo št kombinacij privzete težavnosti 256x
+            if (hexHashValue > target + new BigInteger(Math.Pow(16, 57)))
                 return false;
 
             return true;
