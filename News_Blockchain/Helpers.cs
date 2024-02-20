@@ -60,7 +60,7 @@ namespace News_Blockchain
 	    {
 		    string dataToHash = block.PreviousBlocKHeaderHash + block.MerkleRootHash + block.Time + block.NBits +
 		                        block.Nonce;
-		    return Helpers.ComputeSHA256Hash(dataToHash);
+		    return Helpers.ComputeSHA256Hash(dataToHash, 1);
 	    }
 
 	    /// <summary>

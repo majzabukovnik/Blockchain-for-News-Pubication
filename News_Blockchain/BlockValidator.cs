@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Numerics;
+using EllipticCurve;
 using System.ComponentModel.Design;
 using System.Runtime.InteropServices;
 using System.Diagnostics.Contracts;
@@ -19,7 +16,7 @@ using NBitcoin.Crypto;
 
 namespace News_Blockchain
 {
-    class BlockValidator
+    static class BlockValidator
     {
         private const uint DEFAULT_NBITS = 0x1d00ffff;
         private const int TARGET_BLOCK_TIME = 10;
@@ -31,7 +28,7 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="block"></param>
         /// <returns>true or false</returns>
-        public bool ValidateBlock(Block block)
+        public static bool ValidateBlock(Block block)
         {
             return true;
         }
@@ -43,43 +40,27 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="transactions"></param>
         /// <returns>Merkle root hash value</returns>
-        private string MerkleRootHash(List<Transaction> transactions, Block block, int blockHeight)
+        public static string MerkleRootHash(List<Transaction> transactions)
         {
-            List<List<string>> InternalNodes = new List<List<string>>();
-            int height = 0;
+            List<string> hashes = new List<string>();
+            foreach (Transaction t in transactions)
+                hashes.Add(Helpers.GetTransactionHash(t));
 
-            InternalNodes.Add(new List<string>());
-
-            if (!CheckCoinbaseTransaction(block, blockHeight))
-
-                foreach (Transaction transaction in transactions)
-                {
-                    InternalNodes[0].Add(Serializator.SerializeToString(transaction));
-                }
-
-            while (true)
+            int end = hashes.Count - 1;
+            while (end != 0)
             {
-                InternalNodes.Add(new List<string>());
-                height++;
-
-                for (int index = 0; true; index += 2)
+                for(int i = 0; i <= end; i += 2)
                 {
-                    if (InternalNodes[height - 1].Count == 1)
-                        return InternalNodes[height - 1][0];
-
-                    if (index + 1 == InternalNodes[height - 1].Count)
+                    if (i == end)
                     {
-                        InternalNodes[height].Add(Helpers.ComputeSHA256Hash(
-                            InternalNodes[height - 1][index] + InternalNodes[height - 1][index]));
-                        break;
+                        hashes[i / 2] = Helpers.ComputeSHA256Hash(hashes[i] + hashes[i]);
                     }
-                    if (index == InternalNodes[height - 1].Count)
-                        break;
-
-                    InternalNodes[height].Add(Helpers.ComputeSHA256Hash(
-                        InternalNodes[height - 1][index] + InternalNodes[height - 1][index + 1]));
+                    else hashes[i / 2] = Helpers.ComputeSHA256Hash(hashes[i] + hashes[i + 1]);
                 }
+                end /= 2;
             }
+
+            return hashes[0];
         }
 
         /// <summary>
@@ -89,13 +70,14 @@ namespace News_Blockchain
         /// <param name="headerHash"></param>
         /// <param name="nBits"></param>
         /// <returns>true or false</returns>
-        private bool CheckHashDifficultyTarget(string headerHash, uint nBits)
+        public static bool CheckHashDifficultyTarget(string headerHash, uint nBits)
         {
             BigInteger target = DecompressNbits(nBits);
 
-            BigInteger HexHashValue = BigInteger.Parse(headerHash, System.Globalization.NumberStyles.HexNumber);
-
-            if (HexHashValue > target)
+            BigInteger hexHashValue = BigInteger.Parse("0" + headerHash, System.Globalization.NumberStyles.HexNumber);
+            
+            //targetu prištejemo to število s čimer si zmanjšamo št kombinacij privzete težavnosti 256x
+            if (hexHashValue > target + new BigInteger(Math.Pow(16, 57)))
                 return false;
 
             return true;
@@ -106,7 +88,7 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="currentNbits"></param>
         /// <returns>difficulty</returns>
-        private uint CalculateDifficulty(uint nBits)
+        public static uint CalculateDifficulty(uint nBits)
         {
             return (uint)(DecompressNbits(DEFAULT_NBITS) / DecompressNbits(nBits));
         }
@@ -116,7 +98,7 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="nBits"></param>
         /// <returns>decompressed nBits value</returns>
-        private BigInteger DecompressNbits(uint nBits)
+        public static BigInteger DecompressNbits(uint nBits)
         {
             int significand = int.Parse(nBits.ToString("X").Substring(2), System.Globalization.NumberStyles.HexNumber);
             int exponent = int.Parse(nBits.ToString("X").Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
@@ -130,7 +112,7 @@ namespace News_Blockchain
         /// <param name="oldNbits"></param>
         /// <param name="timeDifference"></param>
         /// <returns>new nBits target</returns>
-        private uint NewDifficulty(uint oldNbits, int timeDifference)
+        public static uint NewDifficulty(uint oldNbits, uint timeDifference)
         {
             uint oldDifficulty = CalculateDifficulty(oldNbits);
             double newDifficulty = oldDifficulty * (double)(BLOCKS_PER_DIFFICULTY_READJUSTMENT * TARGET_BLOCK_TIME) / timeDifference;
@@ -149,7 +131,7 @@ namespace News_Blockchain
         /// <param name="newBlock"></param>
         /// <param name="blockHeight"></param>
         /// <returns>true or false</returns>
-        private bool EvaluateCorrectnessOfBlockDifficulty(Block previousBlock, Block newBlock, int blockHeight, BlockDB blockDB)
+        public static bool EvaluateCorrectnessOfBlockDifficulty(Block previousBlock, Block newBlock, int blockHeight)
         {
             if (blockHeight % 2016 == 0)
             {
@@ -189,7 +171,7 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="block"></param>
         /// <returns>true or false</returns>
-        private bool CheckBlockSerializedSize(Block block)
+        public static bool CheckBlockSerializedSize(Block block)
         {
             if (Serializator.SerializeToString(block).Length >= 1024 * 1024)
                 return false;
@@ -203,7 +185,7 @@ namespace News_Blockchain
         /// <param name="previousBlock"></param>
         /// <param name="currentBlock"></param>
         /// <returns>true or false</returns>
-        private bool CheckForMatchingBlockHeader(Block previousBlock, Block currentBlock)
+        public static bool CheckForMatchingBlockHeader(Block previousBlock, Block currentBlock)
         {
             if (currentBlock.PreviousBlocKHeaderHash != Helpers.GetBlockHash(previousBlock))
                 return false;
@@ -216,7 +198,7 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="heigt"></param>
         /// <returns>base reward</returns>
-        private double CalculateBaseReward(int heigt)
+        public static double CalculateBaseReward(int heigt)
         {
             return 50 * Math.Pow(0.5, heigt / 210000);
         }
@@ -226,7 +208,7 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="block"></param>
         /// <returns>fee sum</returns>
-        private double CalculateBlockFees(Block block)
+        public static double CalculateBlockFees(Block block)
         {
             double fees = 0;
             
@@ -256,7 +238,7 @@ namespace News_Blockchain
         /// <param name="block"></param>
         /// <param name="height"></param>
         /// <returns>true or false</returns>
-        private bool CheckCoinbaseTransaction(Block block, int height)
+        public static bool CheckCoinbaseTransaction(Block block, int height)
         {
             Transaction coinbaseTransaction = block.Transactions.ElementAt(0);
             double maxCoinbaseValue = CalculateBaseReward(height) + CalculateBlockFees(block);
@@ -274,7 +256,7 @@ namespace News_Blockchain
         /// <param name="pubkey"></param>
         /// <param name="senderPublickKey"></param>
         /// <returns>true or false</returns>
-        private bool CheckTransactionSignature(Transacation_Input transactionI, Transacation_Output transactionO)
+        public static bool CheckTransactionSignature(Transacation_Input transaction, Transacation_Output transaction_Output, string pubkey, string senderPublickKey, string signature)
         {
 
             IDictionary<string, string> keyPairs = GenerateKeyPairs();
@@ -311,7 +293,7 @@ namespace News_Blockchain
         /// /// <param name="trxHeight">blocks height</param>
         /// <param name="currentHeight">current height</param>
         /// <returns>ture of false</returns>
-        private bool CoinbaseTransactionMaturity(Block block, int trxHeight, int currentHeight)
+        public static bool CoinbaseTransactionMaturity(Block block, int height, int currentHeight)
         {
             if (!CheckCoinbaseTransaction(block, trxHeight))
                 return false;
@@ -328,7 +310,7 @@ namespace News_Blockchain
         /// <param name="blockDB"></param>
         /// <param name="newBlock"></param>
         /// <returns>true or false</returns>
-        private bool CheckForBlockTime(BlockDB blockDB, Block newBlock)
+        public static bool CheckForBlockTime(BlockDB blockDB, Block newBlock)
         {
             List<Block> list = blockDB.GetLastSpecifiedBlocks(11);
             uint sumTime = 0;
@@ -348,7 +330,7 @@ namespace News_Blockchain
         /// fuction checks if there is a UTXO stored in the database
         /// </summary>
         /// <returns></returns>
-        private bool CheckForDoubleSpending(UTXOTrans uTXOTrans)
+        public static bool CheckForDoubleSpending(UTXOTrans uTXOTrans)
         {
             string? transaction = uTXOTrans.GetKey();
 
@@ -364,7 +346,7 @@ namespace News_Blockchain
         /// this generates random PrivateKey, and using that key it generates a PublicKey
         /// </summary>
         /// <returns>public key</returns>
-        private IDictionary<string, string> GenerateKeyPairs()
+        public static IDictionary<string, string> GenerateKeyPairs()
         {
             var privateKey = new Key();
             var thePrivateKey = privateKey.GetWif(Network.Main).ToString();
@@ -382,7 +364,7 @@ namespace News_Blockchain
         /// the function generates a signature
         /// </summary>
         /// <returns>signature</returns>
-        private string GenerateSignature()
+        public static string GenerateSignature()
         {
             IDictionary<string, string> keyPairs = GenerateKeyPairs();
 
