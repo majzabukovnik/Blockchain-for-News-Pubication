@@ -39,7 +39,7 @@ namespace News_Blockchain
             int end = hashes.Count - 1;
             while (end != 0)
             {
-                for(int i = 0; i <= end; i += 2)
+                for (int i = 0; i <= end; i += 2)
                 {
                     if (i == end)
                     {
@@ -47,6 +47,7 @@ namespace News_Blockchain
                     }
                     else hashes[i / 2] = Helpers.ComputeSHA256Hash(hashes[i] + hashes[i + 1]);
                 }
+
                 end /= 2;
             }
 
@@ -66,7 +67,7 @@ namespace News_Blockchain
             BigInteger target = DecompressNbits(nBits);
 
             BigInteger hexHashValue = BigInteger.Parse("0" + headerHash, System.Globalization.NumberStyles.HexNumber);
-            
+
             //targetu prištejemo to število s čimer si zmanjšamo št kombinacij privzete težavnosti 256x
             if (hexHashValue > target + new BigInteger(Math.Pow(16, 57)))
                 return false;
@@ -206,7 +207,7 @@ namespace News_Blockchain
                 {
                     UTXODB utxoDB = new UTXODB();
                     UTXOTrans trx = utxoDB.GetRecord(ti.OutpointHash + "-" + ti.OutpointIndex);
-                    
+
                     BlockDB blockDB = new BlockDB();
                     Block originBlock = blockDB.GetRecord(trx.HashBlock);
 
@@ -325,7 +326,7 @@ namespace News_Blockchain
         public static IDictionary<string, string> GetKeyPairs()
         {
             PrivateKey privateKey = new PrivateKey();
-            
+
             if (File.Exists(FILE_WITH_KEYS))
             {
                 privateKey = PrivateKey.fromPem(File.ReadAllText(FILE_WITH_KEYS));
@@ -335,8 +336,9 @@ namespace News_Blockchain
                 File.Create(FILE_WITH_KEYS).Close();
                 File.WriteAllText(FILE_WITH_KEYS, privateKey.toPem());
             }
+
             PublicKey publicKey = privateKey.publicKey();
-            
+
             return new Dictionary<string, string>
             {
                 { "privateKey", privateKey.toPem() },
@@ -352,7 +354,6 @@ namespace News_Blockchain
         public static Transaction GenerateSignature(Transaction trx)
         {
             PrivateKey privateKey = PrivateKey.fromPem(GetKeyPairs()["privateKey"]);
-            Console.WriteLine(privateKey.publicKey().toPem());
 
             Signature signature = Ecdsa.sign(Helpers.GetTransactionHash(trx), privateKey);
 
@@ -360,8 +361,57 @@ namespace News_Blockchain
             {
                 ti.stringSignature = signature.toBase64();
             }
-            
+
             return trx;
         }
-    }
+
+        /// <summary>
+        /// Function creates coinbase transaction
+        /// </summary>
+        /// <param name="newBlock"></param>
+        /// <param name="news"></param>
+        /// <returns></returns>
+        public static Transaction GenerateCoinbaseTransaction(Block newBlock, string news = "")
+        {
+            List<string> script = new List<string>
+                { "OP_DUP", "OP_HASH160", GetAddress(), "OP_EQUALVERIFY", "OP_CHECKSIG" };
+            Transacation_Output to = new Transacation_Output(CalculateBaseReward(newBlock.Index) + CalculateBlockFees
+                (newBlock), script.Count, script, news);
+
+            Transacation_Input ti = new Transacation_Input("", 0, 0, "");
+
+            return new Transaction(new List<Transacation_Input> { ti }, new List<Transacation_Output> { to });
+        }
+
+        /// <summary>
+        /// Function returns your address from your public key
+        /// </summary>
+        /// <returns></returns>
+        public static string GetAddress()
+        {
+            PublicKey publicKey = PublicKey.fromPem(GetKeyPairs()["publicKey"]);
+            return Helpers.ComputeRIPEMD160Hash(Helpers.ComputeSHA256Hash(publicKey.toPem(), 1));
+        }
+        
+        /// <summary>
+        /// Function for creating a new block
+        /// </summary>
+        /// <param name="transactions"></param>
+        /// <returns></returns>
+        public static Block CreateBlock(List<Transaction> transactions)
+        {
+            //add implementation of db
+            Block block = new Block("", "", Convert.ToUInt32(DateTimeOffset.UtcNow
+                .ToUnixTimeSeconds() ), 486604799 ,0, transactions);
+            //set nbits to correct value
+            //uint nbits = block.NBits % 2016 != 0  ? block.NBits : BlockValidator.NewDifficulty(block.NBits,  block.Time  - blockDb
+            // .GetLastSpecifiedBlocks(2016).Last().Time );
+            Transaction coinbaseTrx = GenerateCoinbaseTransaction(block);
+            
+            block.Transactions.Insert(0, coinbaseTrx);
+            block.MerkleRootHash = MerkleRootHash(block.Transactions);
+
+            return block;
+        }
+}
 }

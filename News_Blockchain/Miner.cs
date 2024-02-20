@@ -12,10 +12,8 @@ public class Miner
     //nonce - poklicem ComputeSHA256Hash input serializirana vrednost blocka, ena ponovitev 
     private bool _mining = true;
     private BlockDB _blockDb;
-    public Miner(List<Transaction> transactions,BlockDB blockDb)
+    public Miner(Block block, BlockDB blockDb)
     {
-        Block block = CreateABlock(transactions);
-        
         while (_mining)
         {
             if (block.Nonce > 10000000)
@@ -32,19 +30,6 @@ public class Miner
             }
             block.Nonce++;
         }
-        
-        
-    }
-
-    public Block CreateABlock(List<Transaction> transactions)
-    {
-        //add implementation of db
-        Block block = new Block("", BlockValidator.MerkleRootHash(transactions), Convert.ToUInt32(DateTimeOffset.UtcNow
-            .ToUnixTimeSeconds() ), 486604799 ,0, transactions);
-        //set nbits to correct value
-        //uint nbits = block.NBits % 2016 != 0  ? block.NBits : BlockValidator.NewDifficulty(block.NBits,  block.Time  - blockDb
-        // .GetLastSpecifiedBlocks(2016).Last().Time );
-        return block;
     }
 
     public void Stop()
