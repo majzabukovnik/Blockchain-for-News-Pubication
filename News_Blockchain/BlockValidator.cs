@@ -2,6 +2,7 @@
 //https://github.com/starkbank/ecdsa-dotnet?tab=readme-ov-file
 using EllipticCurve;
 using System.IO;
+using System.Threading.Channels;
 
 namespace News_Blockchain
 {
@@ -252,13 +253,20 @@ namespace News_Blockchain
         /// <summary>
         /// Function checks validity of signature
         /// </summary>
-        /// <param name="signature"></param>
-        /// <param name="pubKey"></param>
+        /// <param name="stringSignature"></param>
         /// <param name="prevTrxHash"></param>
+        /// <param name="address"></param>
         /// <returns></returns>
-        public static bool CheckTransactionInputSignature(string signature, string pubKey, string prevTrxHash)
+        public static bool CheckTransactionInputSignature(string stringSignature, string prevTrxHash, string address)
         {
-            return Ecdsa.verify(prevTrxHash, Signature.fromBase64(signature), PublicKey.fromPem(pubKey));
+            int endIndex = stringSignature.IndexOf("-----END PUBLIC KEY-----");
+            PublicKey publicKey = PublicKey.fromPem(stringSignature.Substring(0, endIndex + 24));
+            string signature = stringSignature.Substring(endIndex + 24);
+
+            if (address != Helpers.ComputeRIPEMD160Hash(Helpers.ComputeSHA256Hash(publicKey.toPem(), 1)))
+                return false;
+
+            return Ecdsa.verify(prevTrxHash, Signature.fromBase64(signature), publicKey);
         }
 
         /// <summary>
