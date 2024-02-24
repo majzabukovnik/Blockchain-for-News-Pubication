@@ -23,6 +23,34 @@ namespace News_Blockchain
         /// <returns>true or false</returns>
         public static bool ValidateBlock(Block block)
         {
+            //TODO: check if this validator works
+            //Aney needs to hardcode genesis block, so we can run the miner and generate new block to test this
+            BlockDB blockDb = new BlockDB();
+            //make sure this returns previous block
+            Block prevBlock = blockDb.GetLastSpecifiedBlocks(block.Index - 1)[0];
+            
+            if (MerkleRootHash(block.Transactions) != block.MerkleRootHash)
+                return false;
+
+            if (!EvaluateCorrectnessOfBlockDifficulty(prevBlock, block, 
+                block.Index, blockDb))
+                return false;
+
+            if (!CheckForBlockTime(blockDb, block))
+                return false;
+            
+            if (!CheckIndex(prevBlock, block))
+                return false;
+
+            if (!CheckBlockSerializedSize(block))
+                return false;
+
+            if (!CheckForMatchingBlockHeader(prevBlock, block))
+                return false;
+
+            if (!CheckCoinbaseTransaction(block, block.Index))
+                return false;
+            
             return true;
         }
 
