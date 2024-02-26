@@ -155,7 +155,7 @@ public class UTXODB : Database
     /// <summary>
     /// Get value (value of a Transaction)
     /// </summary>
-    /// <param name="key">Key </param>
+    /// <param name="key">Key (trxHash-index)</param>
     /// <returns> value of a Transaction</returns>
     public UTXOTrans GetRecord(string key)
     {

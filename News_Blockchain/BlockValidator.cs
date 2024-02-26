@@ -1,8 +1,6 @@
 ﻿using System.Numerics;
 //https://github.com/starkbank/ecdsa-dotnet?tab=readme-ov-file
 using EllipticCurve;
-using System.IO;
-using System.Threading.Channels;
 
 namespace News_Blockchain
 {
@@ -28,17 +26,17 @@ namespace News_Blockchain
             BlockDB blockDb = new BlockDB();
             //make sure this returns previous block
             Block prevBlock = blockDb.GetLastSpecifiedBlocks(block.Index - 1)[0];
-            
+
             if (MerkleRootHash(block.Transactions) != block.MerkleRootHash)
                 return false;
 
-            if (!EvaluateCorrectnessOfBlockDifficulty(prevBlock, block, 
-                block.Index, blockDb))
+            if (!EvaluateCorrectnessOfBlockDifficulty(prevBlock, block,
+                    block.Index, blockDb))
                 return false;
 
             if (!CheckForBlockTime(blockDb, block))
                 return false;
-            
+
             if (!CheckIndex(prevBlock, block))
                 return false;
 
@@ -50,8 +48,44 @@ namespace News_Blockchain
 
             if (!CheckCoinbaseTransaction(block, block.Index))
                 return false;
-            
+
+            for (int i = 1; i < block.Transactions.Count; i++)
+            {
+                string trxHash = Helpers.GetTransactionHash(block.Transactions[i]);
+                foreach (Transacation_Input ti in block.Transactions[i].Inputs)
+                {
+                    if (!CheckTransactionInputSignature(ti.stringSignature, trxHash, GetPreviousTrxScript(
+                            ti.OutpointHash, ti.OutpointIndex)[2]))
+                        return false;
+                }
+            }
+
             return true;
+        }
+
+        /// <summary>
+        /// Function returns script from transaction output
+        /// </summary>
+        /// <param name="outpointHash"></param>
+        /// <param name="outpointIndex"></param>
+        /// <returns></returns>
+        public static List<string> GetPreviousTrxScript(string outpointHash, int outpointIndex)
+        {
+            UTXODB utxoDB = new UTXODB();
+            UTXOTrans trx = utxoDB.GetRecord(outpointHash + "-" + outpointIndex);
+
+            BlockDB blockDB = new BlockDB();
+            Block originBlock = blockDB.GetRecord(trx.HashBlock);
+
+            foreach (Transaction blockTrx in originBlock.Transactions)
+            {
+                if (Helpers.GetTransactionHash(blockTrx) == trx.HashTrans)
+                {
+                    return blockTrx.Outputs.ElementAt(outpointIndex).Script;
+                }
+            }
+
+            return new System.Collections.Generic.List<string>();
         }
 
         /// <summary>
@@ -96,7 +130,7 @@ namespace News_Blockchain
         public static bool CheckHashDifficultyTarget(string headerHash, uint nBits)
         {
             BigInteger target = currentTarget;
-            
+
             if (nBits != currentNbits)
             {
                 target = DecompressNbits(nBits);
@@ -291,10 +325,10 @@ namespace News_Blockchain
         /// Function checks validity of signature
         /// </summary>
         /// <param name="stringSignature"></param>
-        /// <param name="prevTrxHash"></param>
+        /// <param name="trxHash"></param>
         /// <param name="address"></param>
         /// <returns></returns>
-        public static bool CheckTransactionInputSignature(string stringSignature, string prevTrxHash, string address)
+        public static bool CheckTransactionInputSignature(string stringSignature, string trxHash, string address)
         {
             int endIndex = stringSignature.IndexOf("-----END PUBLIC KEY-----");
             PublicKey publicKey = PublicKey.fromPem(stringSignature.Substring(0, endIndex + 24));
@@ -303,7 +337,7 @@ namespace News_Blockchain
             if (address != Helpers.ComputeRIPEMD160Hash(Helpers.ComputeSHA256Hash(publicKey.toPem(), 1)))
                 return false;
 
-            return Ecdsa.verify(prevTrxHash, Signature.fromBase64(signature), publicKey);
+            return Ecdsa.verify(trxHash, Signature.fromBase64(signature), publicKey);
         }
 
         /// <summary>
@@ -392,7 +426,7 @@ namespace News_Blockchain
         }
 
         /// <summary>
-        /// Function generates and append signature to transaction inputs
+        /// Function generates and appends signature to transaction inputs
         /// </summary>
         /// <param name="trx">transaction without a signature</param>
         /// <returns>transaction with signature</returns>
@@ -404,7 +438,7 @@ namespace News_Blockchain
 
             foreach (Transacation_Input ti in trx.Inputs)
             {
-                ti.stringSignature = signature.toBase64();
+                ti.stringSignature = GetKeyPairs()["publicKey"] + signature.toBase64();
             }
 
             return trx;
@@ -437,7 +471,7 @@ namespace News_Blockchain
             PublicKey publicKey = PublicKey.fromPem(GetKeyPairs()["publicKey"]);
             return Helpers.ComputeRIPEMD160Hash(Helpers.ComputeSHA256Hash(publicKey.toPem(), 1));
         }
-        
+
         /// <summary>
         /// Function for creating a new block
         /// </summary>
@@ -447,16 +481,16 @@ namespace News_Blockchain
         {
             //add implementation of db
             Block block = new Block("", "", Convert.ToUInt32(DateTimeOffset.UtcNow
-                .ToUnixTimeSeconds() ), 486604799 ,0, transactions);
+                .ToUnixTimeSeconds()), 486604799, 0, transactions);
             //set nbits to correct value
             //uint nbits = block.NBits % 2016 != 0  ? block.NBits : BlockValidator.NewDifficulty(block.NBits,  block.Time  - blockDb
             // .GetLastSpecifiedBlocks(2016).Last().Time );
             Transaction coinbaseTrx = GenerateCoinbaseTransaction(block);
-            
+
             block.Transactions.Insert(0, coinbaseTrx);
             block.MerkleRootHash = MerkleRootHash(block.Transactions);
 
             return block;
         }
-}
+    }
 }
