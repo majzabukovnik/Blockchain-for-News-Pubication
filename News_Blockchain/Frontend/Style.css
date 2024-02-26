@@ -1,7 +1,8 @@
 /* index */
-body{
+body {
     background-color: #212120;
 }
+
 .navbar {
     background-color: #333;
     overflow: hidden;
@@ -18,7 +19,7 @@ body{
     position: fixed;
     top: 0;
     width: 100%;
-    
+
 }
 
 .navbar li {
@@ -39,13 +40,13 @@ li a:hover {
 }
 
 .active {
-    background-color: purple;
+    background-color: rgb(123, 9, 190);
 }
 
 .container1 {
     padding-top: 15px;
     display: grid;
-    grid-template-columns: auto auto;
+    grid-template-columns: 1fr 1fr;
 }
 
 .news-container {
@@ -57,15 +58,16 @@ li a:hover {
     margin-right: 10px;
     box-shadow: 0 0 10px lightslategray;
     color: white;
-    width:50%;
 }
 
 .your-news-container {
     border-style: solid;
     border-radius: 8px;
     box-shadow: 0 0 10px lightslategray;
-    color:white;
-    position: absolute;
+    color: white;
+    overflow: auto;
+    max-height: 820px;
+    height: 50vh;
 }
 
 .your-balance {
@@ -84,7 +86,7 @@ h1 {
 
 .news {
     text-align: center;
-    border:2px solid #bbb;
+    border: 2px solid #bbb;
     margin: 5px;
     margin-left: 15px;
     margin-right: 15px;
@@ -92,22 +94,26 @@ h1 {
 
 .your-news {
     text-align: center;
-    border:2px solid #bbb;
+    border: 2px solid #bbb;
     margin: 5px;
     margin-left: 15px;
     margin-right: 15px;
 }
 
-#publish-news-button button {
-    background-color: blue; 
+.balance {
     color: white;
-    font-weight: bold; 
-    border-radius: 8px; 
-    padding: 10px 20px; 
-    border: none; 
-    cursor: pointer; 
+    margin-left: 10px;
+}
+
+#publish-news-button button {
+    background-color: rgb(123, 9, 190);
+    color: white;
+    font-weight: bold;
+    border-radius: 8px;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
     float: right;
-    
 }
 
 .button {
@@ -115,7 +121,7 @@ h1 {
     margin-top: 10px;
 }
 
-.footer{
+.footer {
     position: fixed;
     left: 0;
     bottom: 0;
@@ -153,21 +159,21 @@ h1 {
 .container4 form label {
     display: block;
     margin-bottom: 5px;
-    color: white; 
+    color: white;
 }
 
 .container4 form input[type="text"],
 .container4 form input[type="number"],
 .container4 form textarea,
 .container4 form input[type="range"],
-.container4 form select { 
+.container4 form select {
     width: 100%;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
     box-sizing: border-box;
-    background-color: white; 
-    color: midnightblue; 
+    background-color: white;
+    color: midnightblue;
 }
 
 .container4 form input[type="range"] {
@@ -189,7 +195,7 @@ h1 {
 
 
 /* News */
-.container2{
+.container2 {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -213,7 +219,7 @@ h1 {
     margin-right: 10px;
 }
 
-.news-text{
+.news-text {
     text-align: left;
     margin-left: 5px;
 }
@@ -228,7 +234,7 @@ h1 {
 }
 
 .pending-transactions-container {
-    
+
     overflow: auto;
     border-style: solid;
     border-radius: 8px;
@@ -241,24 +247,33 @@ h1 {
     border-style: solid;
     border-radius: 8px;
     box-shadow: 0 0 10px lightslategray;
-    color:white;
+    color: white;
 }
 
 /* Transactions */
 .transactions-container {
-    width: 65%;
+    overflow: auto;
+    border-style: solid;
+    border-radius: 8px;
+    margin-right: 10px;
     box-shadow: 0 0 10px lightslategray;
     color: white;
-    border-radius: 8px;
+    height: 70vh;
+}
+
+.sent-tx-container {
     overflow: auto;
-    max-height: 820px;
-    height: 520px;
-    margin-top: 45px;
+    border-style: solid;
+    border-radius: 8px;
+    margin-right: 10px;
+    box-shadow: 0 0 10px lightslategray;
+    color: white;
+    height: 70vh;
 }
 
 .transactions-title {
     text-align: center;
-    border:2px solid #bbb;
+    border: 2px solid #bbb;
     margin: 5px;
     margin-left: 15px;
     margin-right: 15px;
@@ -269,3 +284,19 @@ h3 {
     text-align: left;
 }
 
+.transaction-address {
+    text-align: center;
+    border: 2px solid #bbb;
+    margin: 5px;
+    margin-left: 15px;
+    margin-right: 15px;
+    display: grid;
+    grid-template-columns: auto auto auto;
+}
+
+
+.container-tx {
+    padding-top: 15px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
