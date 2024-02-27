@@ -54,7 +54,7 @@ namespace News_Blockchain
                 string trxHash = Helpers.GetTransactionHash(block.Transactions[i]);
                 foreach (Transacation_Input ti in block.Transactions[i].Inputs)
                 {
-                    if (!CheckTransactionInputSignature(ti.stringSignature, trxHash, GetPreviousTrxScript(
+                    if (!CheckTransactionInputSignature(ti.scriptSignature, trxHash, GetPreviousTrxScript(
                             ti.OutpointHash, ti.OutpointIndex)[2]))
                         return false;
                 }
@@ -438,7 +438,7 @@ namespace News_Blockchain
 
             foreach (Transacation_Input ti in trx.Inputs)
             {
-                ti.stringSignature = GetKeyPairs()["publicKey"] + signature.toBase64();
+                ti.scriptSignature = GetKeyPairs()["publicKey"] + signature.toBase64();
             }
 
             return trx;
@@ -481,7 +481,7 @@ namespace News_Blockchain
         {
             //add implementation of db
             Block block = new Block("", "", Convert.ToUInt32(DateTimeOffset.UtcNow
-                .ToUnixTimeSeconds()), 486604799, 0, transactions);
+                .ToUnixTimeSeconds()), 486604799, 0,0, transactions);// spremen to TODO: spremen to 
             //set nbits to correct value
             //uint nbits = block.NBits % 2016 != 0  ? block.NBits : BlockValidator.NewDifficulty(block.NBits,  block.Time  - blockDb
             // .GetLastSpecifiedBlocks(2016).Last().Time );
