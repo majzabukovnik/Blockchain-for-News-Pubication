@@ -19,7 +19,7 @@
         <form>
             <div class="form-group">
                 <label for="sender-address">Recipient Address:</label>
-                <input type="text" id="sender-address" name="sender-address">
+                <input type="text" id="sender-address" name="sender-address" placeholder="Enter recipient address">
             </div>
             <div class="form-group">
                 <label for="value">Value:</label>
@@ -29,11 +29,11 @@
             </div>
             <div class="form-group">
                 <label for="text">Text:</label>
-                <textarea id="text" name="text"></textarea>
+                <textarea id="text" name="text" rows="10"></textarea>
             </div>
             <div class="form-group">
                 <label for="fees">Fees:</label>
-                <input type="range" id="fees" name="fees" min="1" max="50" step="1" value="1">
+                <input type="range" id="fees" name="fees" min="0" max="100" step="1" value="1">
                 <output for="fees" id="fee-output">1 satoshi/byte</output>
             </div>
             <button type="submit">Submit</button>
