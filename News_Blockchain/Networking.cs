@@ -18,7 +18,7 @@ public class Networking
         
     }
     
-    public async Task<string> Connect(byte[] ip, Message msg)
+    public async Task<Message> Connect(byte[] ip, Message msg)
     {
 
         try
@@ -41,25 +41,32 @@ public class Networking
                 _ = await client.SendAsync(messageBytes, SocketFlags.None);
                 //Console.WriteLine($"Socket client sent message: \"{message}\"");
 
-                // Receive ack.
-                var buffer = new byte[1_024];
-                var received = await client.ReceiveAsync(buffer, SocketFlags.None);
-                var response = Encoding.UTF8.GetString(buffer, 0, received);
-                if (response == "<|ACK|>")
+                if (msg.GetMessageType() == typeof(Request))
                 {
-                    //Console.WriteLine(
-                    //  $"Socket client received acknowledgment: \"{response}\"");
-                    break;
-                  
+                    var buffer = new byte[1_024];
+                    var received = await client.ReceiveAsync(buffer, SocketFlags.None);
+                    var response = Encoding.UTF8.GetString(buffer, 0, received);
+                    var deserialized = Serializator.DeserializeMessage(response);
+                    return deserialized;
+                }
+                else
+                {
+                    // Receive ack.
+                    var buffer = new byte[1_024];
+                    var received = await client.ReceiveAsync(buffer, SocketFlags.None);
+                    var response = Encoding.UTF8.GetString(buffer, 0, received);
+                    if (response == "<|ACK|>")
+                    {
+                        return new Message();
+                    }
                 }
             }
             client.Shutdown(SocketShutdown.Both);
-            return "succes";
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return "error";
+            return new Message();
         }
     }
 
@@ -72,9 +79,10 @@ public class Networking
             SocketType.Stream,
             ProtocolType.Tcp);
 
+        
         listener.Bind(ipEndPoint);
         listener.Listen(100);
-
+        
         var handler = await listener.AcceptAsync();
         while (true)
         {
@@ -83,12 +91,22 @@ public class Networking
             var received = await handler.ReceiveAsync(buffer, SocketFlags.None);
             var response = Encoding.UTF8.GetString(buffer, 0, received);
             Message msg = Serializator.DeserializeMessage(response);
-            var eom = "<|EOM|>";
-            if (response.IndexOf(eom) > -1 /* is end of message */)
-            {
-                Console.WriteLine(
-                    $"Socket server received message: \"{response.Replace(eom, "")}\"");
 
+
+            if (msg.GetMessageType() == typeof(Request))
+            {
+                //TODO: napisi kodo, ki iz database potegne block (treba se posodobit database modul)
+                var ackMessage = "<|ACK|>";
+                var echoBytes = Encoding.UTF8.GetBytes(ackMessage);
+                await handler.SendAsync(echoBytes, 0);
+                Console.WriteLine(
+                    $"Socket server sent acknowledgment: \"{ackMessage}\"");
+                break;
+            }
+            else
+            {
+
+                //TODO: Prejeto transakcijo/block treba validirat in nato dati v db in poslati naprej
                 var ackMessage = "<|ACK|>";
                 var echoBytes = Encoding.UTF8.GetBytes(ackMessage);
                 await handler.SendAsync(echoBytes, 0);
@@ -97,11 +115,8 @@ public class Networking
 
                 break;
             }
-            // Sample output:
-            //    Socket server received message: "Hi friends 👋!"
-            //    Socket server sent acknowledgment: "<|ACK|>"
         }
-        
+
         return ""; 
     }
     

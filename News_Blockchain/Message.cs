@@ -5,7 +5,12 @@ namespace News_Blockchain;
  public struct Request
  {
      private bool lastBlock;
-     private int specifiedBlock;
+     private int specifiedBlock = -2;
+
+     public Request()
+     {
+       
+     }
      
      public bool LastBlock
      {
@@ -37,15 +42,18 @@ namespace News_Blockchain;
 public class Message
 {
     public Request _request;
-   // private byte[] _block;
-   private Block _block;
+    
+    // private byte[] _block;
+    private Block _block;
+    
     //private byte[] _transaction;
     private Transaction _transaction;
 
     //public byte[] Block => _block;
-    
     //public byte[] Transaction => _transaction;
 
+    public Message(){}
+    
     public Message(Block block)
     {
         //_block = Encoding.UTF8.GetBytes(Serializator.SerializeToString(block));
@@ -58,11 +66,12 @@ public class Message
         _transaction = transaction;
     }
 
-    public Type GetMessageType()
+    public Type? GetMessageType()
     {
         if (_block != null) return _block.GetType();
         else if (_transaction != null) return _transaction.GetType();
-        else return _request.GetType();
+        else if (_request.GetBlockIndex() == -2) return _request.GetType();
+        else return null;
         
     }
 
