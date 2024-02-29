@@ -14,7 +14,9 @@ namespace News_Blockchain
 		///<returns> The converted string </returns>
 		public static string SerializeToString(Block block)
 		{
-			return JsonSerializer.Serialize(block); ;
+		
+			
+			return JsonSerializer.Serialize(block);
 		}
 
         ///<summary>
@@ -33,7 +35,8 @@ namespace News_Blockchain
         ///<param name="block"> The string to convert to a block </param>
         ///<returns> The converted block </returns>
         public static Block DeserializeToBlock(string block)
-		{
+        {
+	        
 			return JsonSerializer.Deserialize<Block>(block);
 		}
 
@@ -72,7 +75,7 @@ namespace News_Blockchain
 	    {
 		    string dataToHash = block.PreviousBlocKHeaderHash + block.MerkleRootHash + block.Time + block.NBits +
 		                        block.Nonce;
-		    return Helpers.ComputeSHA256Hash(dataToHash);
+		    return Helpers.ComputeSHA256Hash(dataToHash, 1);
 	    }
 
 	    /// <summary>
@@ -121,6 +124,20 @@ namespace News_Blockchain
                 return ComputeSHA256Hash(stringBuilder.ToString(), 2);
             }
         }
+
+        /// <summary>
+        /// Function computes ripemd160 hash from string
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns>hash</returns>
+        public static string ComputeRIPEMD160Hash(string input)
+        {
+            using (SshNet.Security.Cryptography.RIPEMD160 ripemd160 = new SshNet.Security.Cryptography.RIPEMD160())
+            {
+                byte[] data = Encoding.UTF8.GetBytes(input);
+                return BitConverter.ToString(ripemd160.ComputeHash(data)).Replace("-", "").ToLower();
+            }
+        }   
     }
 }
 

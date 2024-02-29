@@ -1,4 +1,5 @@
 ﻿using System.Net;
+﻿using EllipticCurve;
 
 namespace News_Blockchain;
 
@@ -6,10 +7,11 @@ class Program
 {
     static void Main(string[] args)
     {
+
         Console.WriteLine("Hello, World!");
         BlockDB db = new BlockDB();
         Networking net = new Networking();
-
+      
         Console.WriteLine(db.GetRecordByIndex(0));
         
         if (Console.ReadLine() == "l")
@@ -29,6 +31,10 @@ class Program
             Console.WriteLine("yo");
             Console.ReadLine();
         }
+
+        
+
+
     }
 }
 
