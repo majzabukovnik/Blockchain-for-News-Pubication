@@ -94,7 +94,6 @@ public class BlockDB : Database
             
             InsertNewRecord(b);
         }
-
         
     }
     
@@ -120,18 +119,32 @@ public class BlockDB : Database
         return Serializator.DeserializeToBlock(answer);
     }
 
+
+    public Block? GetRecordByIndex(int index)
+    {
+        var iterator = _zoneTree.CreateIterator();
+        for (int i = 0; i < index; i++)
+        {
+            iterator.Next(); 
+            if (i == index)
+            {
+                return Serializator.DeserializeToBlock(iterator.CurrentValue);
+            }
+        }
+
+        return null;
+    }
+
     public List<Block> GetLastSpecifiedBlocks(int index)
     {
         List<Block> list = new List<Block>();
         var iterator = _zoneTree.CreateIterator();
-        iterator.Next();
         for (int i = 0; i < index; i++)
         {
-            
-            list.Add(Serializator.DeserializeToBlock(iterator.CurrentValue));
             iterator.Next();
+            list.Add(Serializator.DeserializeToBlock(iterator.CurrentValue));
         }
-        
+
         return list;
     }
     
