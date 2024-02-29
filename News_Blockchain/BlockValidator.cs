@@ -1,7 +1,6 @@
 ﻿using System.Numerics;
 //https://github.com/starkbank/ecdsa-dotnet?tab=readme-ov-file
 using EllipticCurve;
-using System.IO;
 
 namespace News_Blockchain
 {
@@ -11,6 +10,8 @@ namespace News_Blockchain
         private const int TARGET_BLOCK_TIME = 10;
         private const int BLOCKS_PER_DIFFICULTY_READJUSTMENT = 2016;
         private const string FILE_WITH_KEYS = "key.txt";
+        private static BigInteger currentTarget;
+        private static uint currentNbits;
 
         /// <summary>
         /// Function checks given block for any potential rule violations and marks it as
@@ -20,7 +21,71 @@ namespace News_Blockchain
         /// <returns>true or false</returns>
         public static bool ValidateBlock(Block block)
         {
+            //TODO: check if this validator works
+            //Aney needs to hardcode genesis block, so we can run the miner and generate new block to test this
+            BlockDB blockDb = new BlockDB();
+            //make sure this returns previous block
+            Block prevBlock = blockDb.GetLastSpecifiedBlocks(block.Index - 1)[0];
+
+            if (MerkleRootHash(block.Transactions) != block.MerkleRootHash)
+                return false;
+
+            if (!EvaluateCorrectnessOfBlockDifficulty(prevBlock, block,
+                    block.Index, blockDb))
+                return false;
+
+            if (!CheckForBlockTime(blockDb, block))
+                return false;
+
+            if (!CheckIndex(prevBlock, block))
+                return false;
+
+            if (!CheckBlockSerializedSize(block))
+                return false;
+
+            if (!CheckForMatchingBlockHeader(prevBlock, block))
+                return false;
+
+            if (!CheckCoinbaseTransaction(block, block.Index))
+                return false;
+
+            for (int i = 1; i < block.Transactions.Count; i++)
+            {
+                string trxHash = Helpers.GetTransactionHash(block.Transactions[i]);
+                foreach (Transacation_Input ti in block.Transactions[i].Inputs)
+                {
+                    if (!CheckTransactionInputSignature(ti.scriptSignature, trxHash, GetPreviousTrxScript(
+                            ti.OutpointHash, ti.OutpointIndex)[2]))
+                        return false;
+                }
+            }
+
             return true;
+        }
+
+        /// <summary>
+        /// Function returns script from transaction output
+        /// </summary>
+        /// <param name="outpointHash"></param>
+        /// <param name="outpointIndex"></param>
+        /// <returns></returns>
+        public static List<string> GetPreviousTrxScript(string outpointHash, int outpointIndex)
+        {
+            UTXODB utxoDB = new UTXODB();
+            UTXOTrans trx = utxoDB.GetRecord(outpointHash + "-" + outpointIndex);
+
+            BlockDB blockDB = new BlockDB();
+            Block originBlock = blockDB.GetRecord(trx.HashBlock);
+
+            foreach (Transaction blockTrx in originBlock.Transactions)
+            {
+                if (Helpers.GetTransactionHash(blockTrx) == trx.HashTrans)
+                {
+                    return blockTrx.Outputs.ElementAt(outpointIndex).Script;
+                }
+            }
+
+            return new System.Collections.Generic.List<string>();
         }
 
         /// <summary>
@@ -39,7 +104,7 @@ namespace News_Blockchain
             int end = hashes.Count - 1;
             while (end != 0)
             {
-                for(int i = 0; i <= end; i += 2)
+                for (int i = 0; i <= end; i += 2)
                 {
                     if (i == end)
                     {
@@ -47,6 +112,7 @@ namespace News_Blockchain
                     }
                     else hashes[i / 2] = Helpers.ComputeSHA256Hash(hashes[i] + hashes[i + 1]);
                 }
+
                 end /= 2;
             }
 
@@ -63,12 +129,18 @@ namespace News_Blockchain
         /// <returns>true or false</returns>
         public static bool CheckHashDifficultyTarget(string headerHash, uint nBits)
         {
-            BigInteger target = DecompressNbits(nBits);
+            BigInteger target = currentTarget;
+
+            if (nBits != currentNbits)
+            {
+                target = DecompressNbits(nBits);
+                currentNbits = nBits;
+            }
 
             BigInteger hexHashValue = BigInteger.Parse("0" + headerHash, System.Globalization.NumberStyles.HexNumber);
-            
+
             //targetu prištejemo to število s čimer si zmanjšamo št kombinacij privzete težavnosti 256x
-            if (hexHashValue > target + new BigInteger(Math.Pow(16, 57)))
+            if (hexHashValue > target * 0x10)
                 return false;
 
             return true;
@@ -93,7 +165,8 @@ namespace News_Blockchain
         {
             int significand = int.Parse(nBits.ToString("X").Substring(2), System.Globalization.NumberStyles.HexNumber);
             int exponent = int.Parse(nBits.ToString("X").Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
-            return significand * BigInteger.Pow(256, exponent - 3);
+            currentTarget = significand * BigInteger.Pow(256, exponent - 3);
+            return currentTarget;
         }
 
         /// <summary>
@@ -206,7 +279,7 @@ namespace News_Blockchain
                 {
                     UTXODB utxoDB = new UTXODB();
                     UTXOTrans trx = utxoDB.GetRecord(ti.OutpointHash + "-" + ti.OutpointIndex);
-                    
+
                     BlockDB blockDB = new BlockDB();
                     Block originBlock = blockDB.GetRecord(trx.HashBlock);
 
@@ -251,13 +324,20 @@ namespace News_Blockchain
         /// <summary>
         /// Function checks validity of signature
         /// </summary>
-        /// <param name="signature"></param>
-        /// <param name="pubKey"></param>
-        /// <param name="prevTrxHash"></param>
+        /// <param name="stringSignature"></param>
+        /// <param name="trxHash"></param>
+        /// <param name="address"></param>
         /// <returns></returns>
-        public static bool CheckTransactionInputSignature(string signature, string pubKey, string prevTrxHash)
+        public static bool CheckTransactionInputSignature(string stringSignature, string trxHash, string address)
         {
-            return Ecdsa.verify(prevTrxHash, Signature.fromBase64(signature), PublicKey.fromPem(pubKey));
+            int endIndex = stringSignature.IndexOf("-----END PUBLIC KEY-----");
+            PublicKey publicKey = PublicKey.fromPem(stringSignature.Substring(0, endIndex + 24));
+            string signature = stringSignature.Substring(endIndex + 24);
+
+            if (address != Helpers.ComputeRIPEMD160Hash(Helpers.ComputeSHA256Hash(publicKey.toPem(), 1)))
+                return false;
+
+            return Ecdsa.verify(trxHash, Signature.fromBase64(signature), publicKey);
         }
 
         /// <summary>
@@ -325,7 +405,7 @@ namespace News_Blockchain
         public static IDictionary<string, string> GetKeyPairs()
         {
             PrivateKey privateKey = new PrivateKey();
-            
+
             if (File.Exists(FILE_WITH_KEYS))
             {
                 privateKey = PrivateKey.fromPem(File.ReadAllText(FILE_WITH_KEYS));
@@ -335,8 +415,9 @@ namespace News_Blockchain
                 File.Create(FILE_WITH_KEYS).Close();
                 File.WriteAllText(FILE_WITH_KEYS, privateKey.toPem());
             }
+
             PublicKey publicKey = privateKey.publicKey();
-            
+
             return new Dictionary<string, string>
             {
                 { "privateKey", privateKey.toPem() },
@@ -345,23 +426,71 @@ namespace News_Blockchain
         }
 
         /// <summary>
-        /// Function generates and append signature to transaction inputs
+        /// Function generates and appends signature to transaction inputs
         /// </summary>
         /// <param name="trx">transaction without a signature</param>
         /// <returns>transaction with signature</returns>
         public static Transaction GenerateSignature(Transaction trx)
         {
             PrivateKey privateKey = PrivateKey.fromPem(GetKeyPairs()["privateKey"]);
-            Console.WriteLine(privateKey.publicKey().toPem());
 
             Signature signature = Ecdsa.sign(Helpers.GetTransactionHash(trx), privateKey);
 
             foreach (Transacation_Input ti in trx.Inputs)
             {
-                ti.stringSignature = signature.toBase64();
+                ti.scriptSignature = GetKeyPairs()["publicKey"] + signature.toBase64();
             }
-            
+
             return trx;
+        }
+
+        /// <summary>
+        /// Function creates coinbase transaction
+        /// </summary>
+        /// <param name="newBlock"></param>
+        /// <param name="news"></param>
+        /// <returns></returns>
+        public static Transaction GenerateCoinbaseTransaction(Block newBlock, string news = "")
+        {
+            List<string> script = new List<string>
+                { "OP_DUP", "OP_HASH160", GetAddress(), "OP_EQUALVERIFY", "OP_CHECKSIG" };
+            Transacation_Output to = new Transacation_Output(CalculateBaseReward(newBlock.Index) + CalculateBlockFees
+                (newBlock), script.Count, script, news);
+
+            Transacation_Input ti = new Transacation_Input("", 0, 0, "");
+
+            return new Transaction(new List<Transacation_Input> { ti }, new List<Transacation_Output> { to });
+        }
+
+        /// <summary>
+        /// Function returns your address from your public key
+        /// </summary>
+        /// <returns></returns>
+        public static string GetAddress()
+        {
+            PublicKey publicKey = PublicKey.fromPem(GetKeyPairs()["publicKey"]);
+            return Helpers.ComputeRIPEMD160Hash(Helpers.ComputeSHA256Hash(publicKey.toPem(), 1));
+        }
+
+        /// <summary>
+        /// Function for creating a new block
+        /// </summary>
+        /// <param name="transactions"></param>
+        /// <returns></returns>
+        public static Block CreateBlock(List<Transaction> transactions)
+        {
+            //add implementation of db
+            Block block = new Block("", "", Convert.ToUInt32(DateTimeOffset.UtcNow
+                .ToUnixTimeSeconds()), 486604799, 0,0, transactions);// spremen to TODO: spremen to 
+            //set nbits to correct value
+            //uint nbits = block.NBits % 2016 != 0  ? block.NBits : BlockValidator.NewDifficulty(block.NBits,  block.Time  - blockDb
+            // .GetLastSpecifiedBlocks(2016).Last().Time );
+            Transaction coinbaseTrx = GenerateCoinbaseTransaction(block);
+
+            block.Transactions.Insert(0, coinbaseTrx);
+            block.MerkleRootHash = MerkleRootHash(block.Transactions);
+
+            return block;
         }
     }
 }

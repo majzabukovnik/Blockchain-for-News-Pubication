@@ -81,6 +81,20 @@ public class BlockDB : Database
 {
     public BlockDB() : base(DB.Blockchain)
     {
+        if (GetAllRecordsCount() == 0)
+        {
+            
+            Transacation_Input trxI = new Transacation_Input("", 0, 0, "");
+            Transacation_Output trxO = new Transacation_Output(50, 5, new List<string>{"OP_DUP","OP_HASH160","a395d3bbd1f141d34dcde4f6832b4390d3667df4","OP_EQUALVERIFY","OP_CHECKSIG"}, 
+                "The Wall Street Journal - 21/Feb/2024 - Lessons From a Three-Decade-Long Stock Market Disaster" );
+            Transaction trx = new Transaction(new List<Transacation_Input>{trxI}, new List<Transacation_Output>{trxO});
+
+            Block b = new Block("", "5dcee163e9a795af9191586b11f7eede9a889f303440cc1c1e56e6d092047ed6", 1708546790,
+                486604799, 5592495, 0, new List<Transaction> { trx });
+            
+            InsertNewRecord(b);
+        }
+
         
     }
     
@@ -110,12 +124,14 @@ public class BlockDB : Database
     {
         List<Block> list = new List<Block>();
         var iterator = _zoneTree.CreateIterator();
+        iterator.Next();
         for (int i = 0; i < index; i++)
         {
+            
             list.Add(Serializator.DeserializeToBlock(iterator.CurrentValue));
             iterator.Next();
         }
-
+        
         return list;
     }
     
@@ -155,7 +171,7 @@ public class UTXODB : Database
     /// <summary>
     /// Get value (value of a Transaction)
     /// </summary>
-    /// <param name="key">Key </param>
+    /// <param name="key">Key (trxHash-index)</param>
     /// <returns> value of a Transaction</returns>
     public UTXOTrans GetRecord(string key)
     {

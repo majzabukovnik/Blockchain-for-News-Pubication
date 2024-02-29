@@ -14,7 +14,9 @@ namespace News_Blockchain
 		///<returns> The converted string </returns>
 		public static string SerializeToString(Block block)
 		{
-			return JsonSerializer.Serialize(block); ;
+		
+			
+			return JsonSerializer.Serialize(block);
 		}
 
         ///<summary>
@@ -33,7 +35,8 @@ namespace News_Blockchain
         ///<param name="block"> The string to convert to a block </param>
         ///<returns> The converted block </returns>
         public static Block DeserializeToBlock(string block)
-		{
+        {
+	        
 			return JsonSerializer.Deserialize<Block>(block);
 		}
 
