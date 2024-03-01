@@ -326,10 +326,7 @@ namespace News_Blockchain
             Transaction coinbaseTransaction = block.Transactions.ElementAt(0);
             double maxCoinbaseValue = CalculateBaseReward(height) + CalculateBlockFees(block);
 
-            if (coinbaseTransaction.Outputs.ElementAt(0).Value > maxCoinbaseValue)
-                return false;
-
-            return true;
+            return coinbaseTransaction.Outputs.ElementAt(0).Value <= maxCoinbaseValue;
         }
 
         /// <summary>
@@ -380,9 +377,7 @@ namespace News_Blockchain
             List<Block> list = blockDb.GetLastSpecifiedBlocks(newBlock.Index - 11);
             uint sumTime = 0;
             foreach (Block block in list)
-            {
                 sumTime += block.Time;
-            }
 
             uint average = sumTime / (uint)list.Count;
             uint unixTimestamp = (uint)DateTime.UtcNow.AddHours(2).Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
@@ -394,7 +389,7 @@ namespace News_Blockchain
         }
 
         /// <summary>
-        /// fuction checks if there is a UTXO stored in the database
+        /// function checks if there is a UTXO stored in the database
         /// </summary>
         /// <returns></returns>
         public static bool CheckForDoubleSpending(UTXOTrans uTXOTrans)
