@@ -123,7 +123,7 @@ public class BlockDB : Database
     public Block? GetRecordByIndex(int index)
     {
         var iterator = _zoneTree.CreateIterator();
-        for (int i = 0; i < index; i++)
+        for (int i = 0; i <= index; i++)
         {
             iterator.Next(); 
             if (i == index)

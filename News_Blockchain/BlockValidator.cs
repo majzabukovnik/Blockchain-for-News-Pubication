@@ -481,7 +481,7 @@ namespace News_Blockchain
         {
             //add implementation of db
             Block block = new Block("", "", Convert.ToUInt32(DateTimeOffset.UtcNow
-                .ToUnixTimeSeconds()), 486604799, 0,0, transactions);// spremen to TODO: spremen to 
+                .ToUnixTimeSeconds()), 486604799, 0,0, transactions);//TODO: spremen to 
             //set nbits to correct value
             //uint nbits = block.NBits % 2016 != 0  ? block.NBits : BlockValidator.NewDifficulty(block.NBits,  block.Time  - blockDb
             // .GetLastSpecifiedBlocks(2016).Last().Time );

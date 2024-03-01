@@ -11,11 +11,11 @@ public struct Peers
 
 public class Networking
 {
+    private BlockDB _blockDb;
     
-    
-    public Networking()
+    public Networking(BlockDB blockDb)
     {
-        
+        _blockDb = blockDb;
     }
     
     public async Task<Message> Connect(byte[] ip, Message msg)
@@ -78,7 +78,6 @@ public class Networking
             ipEndPoint.AddressFamily,
             SocketType.Stream,
             ProtocolType.Tcp);
-
         
         listener.Bind(ipEndPoint);
         listener.Listen(100);
@@ -95,23 +94,31 @@ public class Networking
 
             if (msg.GetMessageType() == typeof(Request))
             {
-                //TODO: napisi kodo, ki iz database potegne block (treba se posodobit database modul)
-                var ackMessage = "<|ACK|>";
+                var block =  _blockDb.GetRecordByIndex(msg.Request.GetBlockIndex());
+                msg.Block = block;
+                var ackMessage = Serializator.SerializeToString(msg);
                 var echoBytes = Encoding.UTF8.GetBytes(ackMessage);
                 await handler.SendAsync(echoBytes, 0);
-                Console.WriteLine(
-                    $"Socket server sent acknowledgment: \"{ackMessage}\"");
                 break;
             }
             else
             {
-
-                //TODO: Prejeto transakcijo/block treba validirat in nato dati v db in poslati naprej
+                if (msg.GetMessageType() == typeof(Block))
+                {
+                    if (BlockValidator.ValidateBlock(msg.Block))
+                    {
+                        _blockDb.InsertNewRecord(msg.Block);
+                        //TODO: posle naprej
+                    }
+                }
+                else if (msg.GetMessageType() == typeof(Transaction))
+                {
+                    //TODO: validiri transakcijo ter vstavi v db in posli naprej
+                }
+                
                 var ackMessage = "<|ACK|>";
                 var echoBytes = Encoding.UTF8.GetBytes(ackMessage);
                 await handler.SendAsync(echoBytes, 0);
-                Console.WriteLine(
-                    $"Socket server sent acknowledgment: \"{ackMessage}\"");
 
                 break;
             }
@@ -120,4 +127,9 @@ public class Networking
         return ""; 
     }
     
+}
+
+public class Web
+{
+    //TODO: majov pc naj bo hardcodan za peer discovery, tuki pa potem list ki hrani svoje peere
 }
