@@ -163,6 +163,18 @@ public class BlockDB : Database
 
         return DB;
     }
+
+    public bool RecordExists(Block block)
+    {
+        return _zoneTree.ContainsKey(Helpers.GetBlockHash(block));
+    }
+
+    public Block GetLastBlock()
+    {
+        var iterator = _zoneTree.CreateIterator();
+        iterator.Next();
+        return Serializator.DeserializeToBlock(iterator.CurrentValue);
+    }
 }
 
 public class UTXODB : Database

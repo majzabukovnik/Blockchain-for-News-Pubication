@@ -2,23 +2,15 @@ using System.Text;
 
 namespace News_Blockchain;
 
-public enum RequestType
-{
-    Transaction,
-    Block
-}
-
  public struct Request
  {
-     private RequestType type;
      private bool last;
      private int? specified;
 
-     public Request(RequestType type, bool last, int? specified = null)
+     public Request(bool last, int? specified = null)
      {
-         this.type = type;
          this.last = last;
-         this.specified = specified  == null ? -2 : specified;
+         this.specified = specified;
      }
      
      public bool LastBlock

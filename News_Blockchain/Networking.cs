@@ -4,14 +4,11 @@ using System.Text;
 
 namespace News_Blockchain;
 
-public struct Peers
-{
-    
-}
 
 public class Networking
 {
     private BlockDB _blockDb;
+    private Block lastSentBlock;
     
     public Networking(BlockDB blockDb)
     {
@@ -94,7 +91,12 @@ public class Networking
 
             if (msg.GetMessageType() == typeof(Request))
             {
-                var block =  _blockDb.GetRecordByIndex(msg.Request.GetBlockIndex());
+                Block? block;
+                if (msg.Request.GetBlockIndex() == -1)
+                     block =  _blockDb.GetLastBlock();
+                else
+                     block =  _blockDb.GetRecordByIndex(msg.Request.GetBlockIndex());
+            
                 msg.Block = block;
                 var ackMessage = Serializator.SerializeToString(msg);
                 var echoBytes = Encoding.UTF8.GetBytes(ackMessage);
@@ -107,8 +109,17 @@ public class Networking
                 {
                     if (BlockValidator.ValidateBlock(msg.Block))
                     {
-                        _blockDb.InsertNewRecord(msg.Block);
-                        //TODO: posle naprej
+                        if (!_blockDb.RecordExists(msg.Block))
+                        {
+                            _blockDb.InsertNewRecord(msg.Block);
+                            //TODO: posle naprej
+                        }
+                        else if (lastSentBlock != msg.Block)
+                        {
+                                //TODO: posle naprej
+                                lastSentBlock = msg.Block;
+                        }
+                        
                     }
                 }
                 else if (msg.GetMessageType() == typeof(Transaction))
@@ -132,4 +143,7 @@ public class Networking
 public class Web
 {
     //TODO: majov pc naj bo hardcodan za peer discovery, tuki pa potem list ki hrani svoje peere
+    
+    
+    
 }
