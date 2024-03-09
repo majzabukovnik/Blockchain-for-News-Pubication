@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 //https://github.com/starkbank/ecdsa-dotnet?tab=readme-ov-file
 using EllipticCurve;
+using NBitcoin;
 
 namespace News_Blockchain
 {
@@ -52,6 +53,22 @@ namespace News_Blockchain
             if (!CheckCoinbaseTransaction(block, block.Index))
                 return false;
 
+            for (int i = 1; i < block.Transactions.Count; i++)
+            {
+                string trxHash = Helpers.GetTransactionHash(block.Transactions[i]);
+                foreach (Transacation_Input ti in block.Transactions[i].Inputs)
+                {
+                    if (!CheckTransactionInputSignature(ti.scriptSignature, trxHash, GetPreviousTrxScript(
+                            ti.OutpointHash, ti.OutpointIndex, blockDb)[2]))
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        public static bool ValidateTransaction(Block block)
+        {
             for (int i = 1; i < block.Transactions.Count; i++)
             {
                 string trxHash = Helpers.GetTransactionHash(block.Transactions[i]);
