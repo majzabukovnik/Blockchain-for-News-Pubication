@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 //https://github.com/starkbank/ecdsa-dotnet?tab=readme-ov-file
 using EllipticCurve;
+using NBitcoin;
 
 namespace News_Blockchain
 {
@@ -12,6 +13,8 @@ namespace News_Blockchain
         private const string FILE_WITH_KEYS = "key.txt";
         private static BigInteger currentTarget;
         private static uint currentNbits;
+        private static BlockDB blockDb;
+        private static UTXODB utxoDb;
 
         /// <summary>
         /// Function checks given block for any potential rule violations and marks it as
@@ -22,19 +25,19 @@ namespace News_Blockchain
         public static bool ValidateBlock(Block block)
         {
             //TODO: check if this validator works
-            //Aney needs to hardcode genesis block, so we can run the miner and generate new block to test this
-            BlockDB blockDb = new BlockDB();
             //make sure this returns previous block
-            Block prevBlock = blockDb.GetLastSpecifiedBlocks(block.Index - 1)[0];
+            Block? prevBlock = blockDb.GetRecordByIndex(block.Index - 1);
+
+            if (prevBlock == null)
+                return false;
 
             if (MerkleRootHash(block.Transactions) != block.MerkleRootHash)
                 return false;
 
-            if (!EvaluateCorrectnessOfBlockDifficulty(prevBlock, block,
-                    block.Index, blockDb))
+            if (!EvaluateCorrectnessOfBlockDifficulty(prevBlock, block))
                 return false;
 
-            if (!CheckForBlockTime(blockDb, block))
+            if (!CheckForBlockTime(block))
                 return false;
 
             if (!CheckIndex(prevBlock, block))
@@ -46,21 +49,49 @@ namespace News_Blockchain
             if (!CheckForMatchingBlockHeader(prevBlock, block))
                 return false;
 
+
             if (!CheckCoinbaseTransaction(block, block.Index))
                 return false;
 
             for (int i = 1; i < block.Transactions.Count; i++)
             {
-                string trxHash = Helpers.GetTransactionHash(block.Transactions[i]);
-                foreach (Transacation_Input ti in block.Transactions[i].Inputs)
-                {
-                    if (!CheckTransactionInputSignature(ti.scriptSignature, trxHash, GetPreviousTrxScript(
-                            ti.OutpointHash, ti.OutpointIndex)[2]))
-                        return false;
-                }
+                if (ValidateTransaction(block.Transactions[i]) == false)
+                    return false;
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Function check if transaction is valid
+        /// </summary>
+        /// <param name="trx"></param>
+        /// <returns></returns>
+        public static bool ValidateTransaction(Transaction trx)
+        {
+            //checks signatures
+            string trxHash = Helpers.GetTransactionHash(trx);
+            foreach (Transacation_Input ti in trx.Inputs)
+            {
+                if (!CheckTransactionInputSignature(ti.scriptSignature, trxHash, GetPreviousTrxScript(
+                        ti.OutpointHash, ti.OutpointIndex, blockDb)[2]))
+                    return false;
+            }
+
+            //bug: check if correct value is transferred (inputs - outputs) >= 0
+
+            return true;
+        }
+
+        /// <summary>
+        /// Function that sets database instance of BlockDB.
+        /// MUST BE FIRST ONE TO BE CALLED
+        /// </summary>
+        /// <param name="db"></param>
+        public static void SetBlockDB(BlockDB db, UTXODB utxodb)
+        {
+            blockDb = db;
+            utxoDb = utxodb;
         }
 
         /// <summary>
@@ -69,13 +100,11 @@ namespace News_Blockchain
         /// <param name="outpointHash"></param>
         /// <param name="outpointIndex"></param>
         /// <returns></returns>
-        public static List<string> GetPreviousTrxScript(string outpointHash, int outpointIndex)
+        public static List<string> GetPreviousTrxScript(string outpointHash, int outpointIndex, BlockDB db)
         {
-            UTXODB utxoDB = new UTXODB();
-            UTXOTrans trx = utxoDB.GetRecord(outpointHash + "-" + outpointIndex);
+            UTXOTrans trx = utxoDb.GetRecord(outpointHash + "-" + outpointIndex);
 
-            BlockDB blockDB = new BlockDB();
-            Block originBlock = blockDB.GetRecord(trx.HashBlock);
+            Block originBlock = db.GetRecord(trx.HashBlock);
 
             foreach (Transaction blockTrx in originBlock.Transactions)
             {
@@ -139,7 +168,7 @@ namespace News_Blockchain
 
             BigInteger hexHashValue = BigInteger.Parse("0" + headerHash, System.Globalization.NumberStyles.HexNumber);
 
-            //targetu prištejemo to število s čimer si zmanjšamo št kombinacij privzete težavnosti 256x
+            //target zmnožimo s tem številom, s čimer si zmanjšamo št. kombinacij privzete težavnosti za 16x
             if (hexHashValue > target * 0x10)
                 return false;
 
@@ -207,12 +236,15 @@ namespace News_Blockchain
         /// <param name="newBlock"></param>
         /// <param name="blockHeight"></param>
         /// <returns>true or false</returns>
-        public static bool EvaluateCorrectnessOfBlockDifficulty(Block previousBlock, Block newBlock, int blockHeight,
-            BlockDB blockDB)
+        public static bool EvaluateCorrectnessOfBlockDifficulty(Block previousBlock, Block newBlock)
         {
-            if (blockHeight % 2016 == 0)
+            if (newBlock.Index % 2016 == 0)
             {
-                uint timeDiff = newBlock.Time - blockDB.GetLastSpecifiedBlocks(newBlock.Index)[0].Time;
+                Block? oldBlock = blockDb.GetRecordByIndex(newBlock.Index - 2016);
+                if (oldBlock == null)
+                    return false;
+
+                uint timeDiff = newBlock.Time - oldBlock.Time;
 
                 if (newBlock.NBits != NewDifficulty(previousBlock.NBits, timeDiff))
                     return false;
@@ -231,10 +263,7 @@ namespace News_Blockchain
         /// <returns>true or false</returns>
         public static bool CheckBlockSerializedSize(Block block)
         {
-            if (Serializator.SerializeToString(block).Length >= 1024 * 1024)
-                return false;
-
-            return true;
+            return Serializator.SerializeToString(block).Length <= 1048576;
         }
 
         /// <summary>
@@ -256,9 +285,10 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="heigt"></param>
         /// <returns>base reward</returns>
-        public static double CalculateBaseReward(int heigt)
+        public static double CalculateBaseReward(int height)
         {
-            return 50 * Math.Pow(0.5, heigt / 210000);
+            double output = 50 * Math.Pow(0.5, height / 210000);
+            return 50 * Math.Pow(0.5, height / 210000);
         }
 
         /// <summary>
@@ -277,11 +307,12 @@ namespace News_Blockchain
 
                 foreach (Transacation_Input ti in t.Inputs)
                 {
-                    UTXODB utxoDB = new UTXODB();
-                    UTXOTrans trx = utxoDB.GetRecord(ti.OutpointHash + "-" + ti.OutpointIndex);
+                    if (ti.OutpointHash == "")
+                        break;
 
-                    BlockDB blockDB = new BlockDB();
-                    Block originBlock = blockDB.GetRecord(trx.HashBlock);
+                    UTXOTrans trx = utxoDb.GetRecord(ti.OutpointHash + "-" + ti.OutpointIndex);
+
+                    Block originBlock = blockDb.GetRecord(trx.HashBlock);
 
                     foreach (Transaction blockTrx in originBlock.Transactions)
                     {
@@ -313,12 +344,9 @@ namespace News_Blockchain
         public static bool CheckCoinbaseTransaction(Block block, int height)
         {
             Transaction coinbaseTransaction = block.Transactions.ElementAt(0);
-            double maxCoinbaseValue = CalculateBaseReward(height) + CalculateBlockFees(block);
+            double maxCoinbaseValue = 2 * CalculateBaseReward(height) + CalculateBlockFees(block);
 
-            if (coinbaseTransaction.Outputs.ElementAt(0).Value > maxCoinbaseValue)
-                return false;
-
-            return true;
+            return coinbaseTransaction.Outputs.ElementAt(0).Value <= maxCoinbaseValue;
         }
 
         /// <summary>
@@ -364,16 +392,18 @@ namespace News_Blockchain
         /// <param name="blockDB"></param>
         /// <param name="newBlock"></param>
         /// <returns>true or false</returns>
-        public static bool CheckForBlockTime(BlockDB blockDB, Block newBlock)
+        public static bool CheckForBlockTime(Block newBlock)
         {
-            List<Block> list = blockDB.GetLastSpecifiedBlocks(11);
+            int index = newBlock.Index - 11;
+            if (index < 0)
+                index = 0;
+
+            List<Block> list = blockDb.GetLastSpecifiedBlocks(index);
             uint sumTime = 0;
             foreach (Block block in list)
-            {
                 sumTime += block.Time;
-            }
 
-            uint average = sumTime / 11;
+            uint average = sumTime / (uint)list.Count;
             uint unixTimestamp = (uint)DateTime.UtcNow.AddHours(2).Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
 
             if ((average > newBlock.Time) && (newBlock.Time > unixTimestamp))
@@ -383,7 +413,7 @@ namespace News_Blockchain
         }
 
         /// <summary>
-        /// fuction checks if there is a UTXO stored in the database
+        /// function checks if there is a UTXO stored in the database
         /// </summary>
         /// <returns></returns>
         public static bool CheckForDoubleSpending(UTXOTrans uTXOTrans)
@@ -477,11 +507,13 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="transactions"></param>
         /// <returns></returns>
-        public static Block CreateBlock(List<Transaction> transactions)
+        public static Block CreateBlock(List<Transaction> transactions, BlockDB db)
         {
+            int index = BlockDB.LastKnownBlockIndex + 1;
             //add implementation of db
-            Block block = new Block("", "", Convert.ToUInt32(DateTimeOffset.UtcNow
-                .ToUnixTimeSeconds()), 486604799, 0,0, transactions);// spremen to TODO: spremen to 
+            Block block = new Block(db.GetRecordByIndex(index - 1).PreviousBlocKHeaderHash, "", Convert.ToUInt32(
+                DateTimeOffset.UtcNow
+                    .ToUnixTimeSeconds()), 486604799, 0, index, transactions); // spremen to TODO: spremen to 
             //set nbits to correct value
             //uint nbits = block.NBits % 2016 != 0  ? block.NBits : BlockValidator.NewDifficulty(block.NBits,  block.Time  - blockDb
             // .GetLastSpecifiedBlocks(2016).Last().Time );
@@ -491,6 +523,64 @@ namespace News_Blockchain
             block.MerkleRootHash = MerkleRootHash(block.Transactions);
 
             return block;
+        }
+
+        /// <summary>
+        /// Function creates valid transaction
+        /// </summary>
+        /// <param name="myUTXOs">List of my UTXOs in form trxHash-index</param>
+        /// <param name="address">Recipient's address</param>
+        /// <param name="value">Value of transfer</param>
+        /// <param name="fee">Fee in satoshy/byte</param>
+        /// <param name="text">Optional argument for news content</param>
+        /// <returns></returns>
+        public static Transaction CrateTransaction(string[] myUTXOs, string address, double value, int fee,
+            string text = "")
+        {
+            double sumInputs = 0;
+            List<Transacation_Input> inputs = new List<Transacation_Input>();
+
+            for (int i = 0; i < myUTXOs.Length; i++)
+            {
+                UTXOTrans trx = utxoDb.GetRecord(myUTXOs[i]);
+                Block originBlock = blockDb.GetRecord(trx.HashBlock);
+
+                foreach (Transaction blockTrx in originBlock.Transactions)
+                {
+                    if (Helpers.GetTransactionHash(blockTrx) == trx.HashTrans)
+                    {
+                        sumInputs += blockTrx.Outputs[trx.Index].Value;
+                        inputs.Add(new Transacation_Input(trx.HashBlock, trx.Index,
+                            blockTrx.Outputs[trx.Index].ScriptLenght, ""));
+                        break;
+                    }
+                }
+
+                //bug: fee value is not taken into account
+                if (sumInputs >= value)
+                    break;
+            }
+
+            double change = sumInputs - value - fee;
+            if (change < 0)
+                change = 0;
+            
+            List<Transacation_Output> outputs = new List<Transacation_Output>
+            {
+                new Transacation_Output(value, 5, new List<string>
+                {
+                    "OP_DUP", "OP_HASH160", address, "OP_EQUALVERIFY",
+                    "OP_CHECKSIG"
+                }, text),
+                new Transacation_Output(change, 5, new List<string>
+                {
+                    "OP_DUP", "OP_HASH160", address, "OP_EQUALVERIFY",
+                    "OP_CHECKSIG"
+                }),
+            };
+
+
+            return new Transaction(inputs, outputs);
         }
     }
 }

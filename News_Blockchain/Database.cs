@@ -79,7 +79,14 @@ public abstract class Database
 
 public class BlockDB : Database
 {
-    public BlockDB() : base(DB.Blockchain)
+    private static int lastKnownBlockIndex = 0;
+
+    public static int LastKnownBlockIndex
+    {
+        get { return lastKnownBlockIndex; }
+    }
+
+public BlockDB() : base(DB.Blockchain)
     {
         if (GetAllRecordsCount() == 0)
         {
@@ -104,6 +111,7 @@ public class BlockDB : Database
     /// <param name="value">Value (Serialized Block)</param>
     public void InsertNewRecord(Block block)
     {
+        lastKnownBlockIndex++;
         _zoneTree.AtomicUpsert(Helpers.GetBlockHash(block), Serializator.SerializeToString(block));
     }
 
@@ -123,7 +131,7 @@ public class BlockDB : Database
     public Block? GetRecordByIndex(int index)
     {
         var iterator = _zoneTree.CreateIterator();
-        for (int i = 0; i < index; i++)
+        for (int i = 0; i <= index; i++)
         {
             iterator.Next(); 
             if (i == index)
@@ -135,11 +143,16 @@ public class BlockDB : Database
         return null;
     }
 
+    /// <summary>
+    /// Function returns a list of blocks from including specified index and up to latest block
+    /// </summary>
+    /// <param name="index"></param>
+    /// <returns></returns>
     public List<Block> GetLastSpecifiedBlocks(int index)
     {
         List<Block> list = new List<Block>();
         var iterator = _zoneTree.CreateIterator();
-        for (int i = 0; i < index; i++)
+        for (int i = index; i <= lastKnownBlockIndex; i++)
         {
             iterator.Next();
             list.Add(Serializator.DeserializeToBlock(iterator.CurrentValue));
