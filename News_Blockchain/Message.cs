@@ -4,28 +4,29 @@ namespace News_Blockchain;
 
  public struct Request
  {
-     private bool lastBlock;
-     private int specifiedBlock = -2;
+     private bool last;
+     private int? specified;
 
-     public Request()
+     public Request(bool last, int? specified = null)
      {
-       
+         this.last = last;
+         this.specified = specified;
      }
      
      public bool LastBlock
      {
-         get { return lastBlock; }
-         set { lastBlock = value; }
+         get { return last; }
+         set { last = value; }
      }
      
-     public int SpecifiedBlock
+     public int? SpecifiedBlock
      {
-         get { return specifiedBlock; }
+         get { return specified; }
          set
          {
              if (value >= 0)
              {
-                 specifiedBlock = value;
+                 specified = value;
              }
          }
      }
@@ -35,34 +36,45 @@ namespace News_Blockchain;
     /// <returns></returns>
      public int GetBlockIndex()
      {
-         return lastBlock == true ? -1 : specifiedBlock;
+         return last == true ? -1 : (int)specified;
      }
  }
 
 public class Message
 {
-    public Request _request;
+    private Request _request;
     
-    // private byte[] _block;
-    private Block _block;
+    private Block? _block;
     
-    //private byte[] _transaction;
-    private Transaction _transaction;
+    private Transaction? _transaction;
+    
+    public Request Request
+    {
+        get => _request;
+        set => _request = value;
+    }
 
-    //public byte[] Block => _block;
-    //public byte[] Transaction => _transaction;
+    public Block? Block
+    {
+        get => _block;
+        set => _block = value;
+    }
+
+    public Transaction? Transaction
+    {
+        get => _transaction;
+        set => _transaction = value;
+    }
 
     public Message(){}
     
     public Message(Block block)
     {
-        //_block = Encoding.UTF8.GetBytes(Serializator.SerializeToString(block));
         _block = block;
     }
 
     public Message(Transaction transaction)
     {
-        //_transaction = Encoding.UTF8.GetBytes(Serializator.SerializeToString(transaction));
         _transaction = transaction;
     }
 
@@ -70,20 +82,18 @@ public class Message
     {
         if (_block != null) return _block.GetType();
         else if (_transaction != null) return _transaction.GetType();
-        else if (_request.GetBlockIndex() == -2) return _request.GetType();
+        else if (_request.GetBlockIndex() != -2) return _request.GetType();
         else return null;
         
     }
 
     public Block GetBlock()
     {
-        //return Serializator.DeserializeToBlock(Encoding.UTF8.GetString(_block));
         return _block;
     }
 
     public Transaction GetTransaction()
     {
-        //return Serializator.DeserializeToTransaction(Encoding.UTF8.GetString(_transaction));
         return _transaction;
     }
     

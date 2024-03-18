@@ -511,6 +511,7 @@ namespace News_Blockchain
         {
             int index = BlockDB.LastKnownBlockIndex + 1;
             //add implementation of db
+
             Block block = new Block(db.GetRecordByIndex(index - 1).PreviousBlocKHeaderHash, "", Convert.ToUInt32(
                 DateTimeOffset.UtcNow
                     .ToUnixTimeSeconds()), 486604799, 0, index, transactions); // spremen to TODO: spremen to 
