@@ -142,8 +142,15 @@ public class Networking
 
 public class Web
 {
-    //TODO: majov pc naj bo hardcodan za peer discovery, tuki pa potem list ki hrani svoje peere
+    private Networking _networking;
+    private BlockDB _blockDb;
     
+    //TODO: majov pc naj bo hardcodan za peer discovery, tuki pa potem list ki hrani svoje peere
+    public Web(BlockDB blockDb)
+    {
+        _networking = new Networking(blockDb);
+        _blockDb = blockDb;
+    }
     
     
 }
