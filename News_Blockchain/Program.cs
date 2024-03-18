@@ -10,7 +10,8 @@ class Program
 
         Console.WriteLine("Hello, World!");
         BlockDB db = new BlockDB();
-        Networking net = new Networking(db);
+        UTXODB utxodb = new UTXODB();
+        Networking net = new Networking(db, utxodb);
       
         Console.WriteLine(db.GetRecordByIndex(0).MerkleRootHash);
         

@@ -234,6 +234,11 @@ public class UTXODB : Database
 
         return db;
     }
+    
+    public bool RecordExists(UTXOTrans trans)
+    {
+        return _zoneTree.ContainsKey(trans.GetKey());
+    }
 }
 
 

@@ -7,12 +7,15 @@ namespace News_Blockchain;
 
 public class Networking
 {
+    public static List<string> UTXOKey = new List<string>();
     private BlockDB _blockDb;
+    private UTXODB _utxodb;
     private Block lastSentBlock;
     
-    public Networking(BlockDB blockDb)
+    public Networking(BlockDB blockDb, UTXODB utxodb)
     {
         _blockDb = blockDb;
+        _utxodb = utxodb;
     }
     
     public async Task<Message> Connect(byte[] ip, Message msg)
@@ -125,6 +128,14 @@ public class Networking
                 else if (msg.GetMessageType() == typeof(Transaction))
                 {
                     //TODO: validiri transakcijo ter vstavi v db in posli naprej
+                    if (BlockValidator.ValidateTransaction(msg.Transaction))
+                    {
+                        // if (_utxodb.RecordExists(msg.Transaction))
+                        // {
+                        //     
+                        // }
+                        
+                    }
                 }
                 
                 var ackMessage = "<|ACK|>";
@@ -146,9 +157,9 @@ public class Web
     private BlockDB _blockDb;
     
     //TODO: majov pc naj bo hardcodan za peer discovery, tuki pa potem list ki hrani svoje peere
-    public Web(BlockDB blockDb)
+    public Web(BlockDB blockDb, UTXODB utxodb)
     {
-        _networking = new Networking(blockDb);
+        _networking = new Networking(blockDb, utxodb);
         _blockDb = blockDb;
     }
     
