@@ -61,6 +61,11 @@ namespace News_Blockchain
         {
 	        return JsonSerializer.Deserialize<Message>(msg);
         }
+
+        public static List<string>? DeserializeToListString(string list)
+        {
+	        return JsonSerializer.Deserialize<List<string>>(list);
+        }
         
     }
 

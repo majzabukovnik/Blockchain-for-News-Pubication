@@ -19,7 +19,7 @@ namespace News_Blockchain;
          set { last = value; }
      }
      
-     public int? SpecifiedBlock
+     public int? SpecifiedBlocks
      {
          get { return specified; }
          set
@@ -44,7 +44,7 @@ public class Message
 {
     private Request _request;
     
-    private Block? _block;
+    private List<Block>? _block;
     
     private Transaction? _transaction;
     
@@ -54,7 +54,7 @@ public class Message
         set => _request = value;
     }
 
-    public Block? Block
+    public List<Block>? Block
     {
         get => _block;
         set => _block = value;
@@ -68,7 +68,7 @@ public class Message
 
     public Message(){}
     
-    public Message(Block block)
+    public Message(List<Block> block)
     {
         _block = block;
     }
@@ -87,7 +87,7 @@ public class Message
         
     }
 
-    public Block GetBlock()
+    public List<Block> GetBlock()
     {
         return _block;
     }

@@ -138,6 +138,7 @@ public BlockDB() : base(DB.Blockchain)
             {
                 return Serializator.DeserializeToBlock(iterator.CurrentValue);
             }
+            
         }
 
         return null;
