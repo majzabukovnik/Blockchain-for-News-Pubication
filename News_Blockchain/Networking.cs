@@ -27,7 +27,7 @@ public class Networking
 
         try
         {
-            IPEndPoint ipEndPoint = new IPEndPoint(new IPAddress(ip), 1201);
+            IPEndPoint ipEndPoint = new IPEndPoint(new IPAddress(ip), 8082);
         
             using Socket client = new(
                 ipEndPoint.AddressFamily, 
@@ -76,7 +76,7 @@ public class Networking
 
     public async Task<string> Listen(byte[] ip)
     {
-        IPEndPoint ipEndPoint = new IPEndPoint(new IPAddress(ip), 1201);
+        IPEndPoint ipEndPoint = new IPEndPoint(new IPAddress(ip), 8082);
         
         using Socket listener = new(
             ipEndPoint.AddressFamily,
@@ -203,12 +203,14 @@ public class Web
     {
         _networking = new Networking(blockDb, utxodb, this);
         _blockDb = blockDb;
-        GetPeers("192.168.0.143");
+        //GetPeers("86.61.79.100");
+        Peers = new List<string>() { "77.38.115.253", "46.164.62.40" };
+        _networking.Listen(IPAddress.Parse("192.168.0.129").GetAddressBytes());
     }
 
     private async Task GetPeers(string ip)
     {
-        IPEndPoint ipEndPoint = new IPEndPoint(new IPAddress(IPAddress.Parse("86.61.79.100").GetAddressBytes()), 1804);
+        IPEndPoint ipEndPoint = new IPEndPoint(new IPAddress(IPAddress.Parse("77.38.115.253").GetAddressBytes()), 8081);
         
         using Socket client = new(
             ipEndPoint.AddressFamily, 
@@ -255,7 +257,7 @@ public class Web
 
     public async Task Spread(Message msg)
     {
-        
+        //await GetPeers("86.61.79.100");
         foreach (var VARIABLE in GetRandomPeers())
         {
             _ = await _networking.Connect(IPAddress.Parse(VARIABLE).GetAddressBytes(), msg);

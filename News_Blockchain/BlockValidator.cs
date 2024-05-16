@@ -169,7 +169,7 @@ namespace News_Blockchain
             BigInteger hexHashValue = BigInteger.Parse("0" + headerHash, System.Globalization.NumberStyles.HexNumber);
 
             //target zmnožimo s tem številom, s čimer si zmanjšamo št. kombinacij privzete težavnosti za 16x
-            if (hexHashValue > target * 0x10)
+            if (hexHashValue > target * 0x100)
                 return false;
 
             return true;

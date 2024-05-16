@@ -20,6 +20,17 @@ class Program
         } 
             
         BlockDB db = new BlockDB();
+
+        db.DeleteRecords("000000ffa3cab4b4dcd3bac65196b863ed092bfebcd9a29dcc34f6514f611611");
+       // db.DeleteRecords("00000061ab945215c6b9c3f99280ecd79e979c362cb6c9d39c274681de2aedcf");
+        
+        var blocks = db.GetAllRecords();
+        foreach (var var in blocks)
+        {
+            Console.WriteLine(var.Key);
+            Console.WriteLine(Serializator.SerializeToString(var.Value));
+        }
+        
         UTXODB utxodb = new UTXODB();
         Web web = new Web(db, utxodb);
         
