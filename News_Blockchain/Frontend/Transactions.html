@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="Style.css">
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <ul>
+            <li><a href="index.html">Home</a></li>            
+            <li><a href="News.html">News</a></li>
+            <li><a href="TransactionForm.html">Create-Transaction</a></li>
+            <li style="float:left"><a class="active" href="Transactions.html">Transaction-History</a></li>
+        </ul>
+    </nav>
+    <div class="container-tx">
+        <div class="transactions-container" id="transactions-container">
+            <h1>Sent Transactions</h1>
+            <div class="transaction-address" id="transaction-address"><p>2e89d0464e4d4aa0906712e646b19b97b1453e36</p>
+                <div class="date-tx" id="date-tx"><p>25.02.2024, 15:07</p></div>
+                <div calss="value-out" id="value-out"><p>-142,66 units</p></div>
+            </div>
+        </div>
+
+        <div class="sent-tx-container" id ="sent-tx-container">
+            <h1>Recived Transactions</h1>
+            <div class="transaction-address" id="transaction-address"><p>2e89d0464e4d4aa0906712e646b19b97b1453e36</p>
+                <div class="date-tx" id="date-tx"><p>25.02.2024, 13:05</p></div>
+                <div calss="value-in" id="value-in"><p>+200 units</p></div>
+            </div>
+            <div class="transaction-address" id="transaction-address"><p>29d400d1ca81d7a7957cce629e8992c0e990f38b5c</p>
+                <div class="date-tx" id="date-tx"><p>22.02.2024, 11:05</p></div>
+                <div calss="value-in" id="value-in"><p>+175 units</p></div>
+            </div>
+        </div>
+    </div>
+</body>
+<footer>
+    <div class="footer">
+        <p>©News_blockchain</p> 
+    </div>  
+</html>

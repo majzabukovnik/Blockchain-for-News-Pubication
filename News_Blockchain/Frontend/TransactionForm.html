@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="Style.css">
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="News.html">News</a></li>
+            <li><a class="active" href="TransactionForm.html">Create-Transaction</a></li>
+            <li><a href="Transactions.html">Transaction-History</a></li>
+        </ul>
+    </nav>
+    <div class="container4">
+        <form>
+            <div class="form-group">
+                <label for="sender-address">Recipient Address:</label>
+                <input type="text" id="sender-address" name="sender-address" placeholder="Enter recipient address">
+            </div>
+            <div class="form-group">
+                <label for="value">Value:</label>
+                <div>
+                    <input type="number" id="value" name="value" placeholder="Enter value">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="text">Text:</label>
+                <textarea id="text" name="text" rows="10"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="fees">Fees:</label>
+                <input type="range" id="fees" name="fees" min="0" max="100" step="1" value="1">
+                <output for="fees" id="fee-output">1 satoshi/byte</output>
+            </div>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+</body>
+<footer>
+    <div class="footer">
+        <p>©News_blockchain</p>
+    </div>
+
+</html>
