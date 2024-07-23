@@ -138,6 +138,7 @@ public BlockDB() : base(DB.Blockchain)
             {
                 return Serializator.DeserializeToBlock(iterator.CurrentValue);
             }
+            
         }
 
         return null;
@@ -233,6 +234,11 @@ public class UTXODB : Database
         }
 
         return db;
+    }
+    
+    public bool RecordExists(UTXOTrans trans)
+    {
+        return _zoneTree.ContainsKey(trans.GetKey());
     }
 }
 

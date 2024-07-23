@@ -169,7 +169,7 @@ namespace News_Blockchain
             BigInteger hexHashValue = BigInteger.Parse("0" + headerHash, System.Globalization.NumberStyles.HexNumber);
 
             //target zmnožimo s tem številom, s čimer si zmanjšamo št. kombinacij privzete težavnosti za 16x
-            if (hexHashValue > target * 0x10)
+            if (hexHashValue > target * 0x100)
                 return false;
 
             return true;
@@ -507,12 +507,12 @@ namespace News_Blockchain
         /// </summary>
         /// <param name="transactions"></param>
         /// <returns></returns>
-        public static Block CreateBlock(List<Transaction> transactions, BlockDB db)
+        public static Block CreateBlock(List<Transaction> transactions)
         {
             int index = BlockDB.LastKnownBlockIndex + 1;
             //add implementation of db
 
-            Block block = new Block(db.GetRecordByIndex(index - 1).PreviousBlocKHeaderHash, "", Convert.ToUInt32(
+            Block block = new Block(blockDb.GetRecordByIndex(index - 1).PreviousBlocKHeaderHash, "", Convert.ToUInt32(
                 DateTimeOffset.UtcNow
                     .ToUnixTimeSeconds()), 486604799, 0, index, transactions); // spremen to TODO: spremen to 
             //set nbits to correct value
